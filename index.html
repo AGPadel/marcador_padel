@@ -15,16 +15,8 @@
 html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;touch-action:manipulation;}
 :root{--bg:#f8fafc;--t1:#1e3a5f;--t2:#7f1d1d;--green:#16a34a;--gold:#f59e0b;--border:#e2e8f0;--mid:#64748b;--dim:#94a3b8;}
 
-/* ── FORCE LANDSCAPE ── */
-@media (orientation:portrait){
-  .app{
-    width:100dvh!important;height:100dvw!important;
-    top:calc((100dvh - 100dvw)/2)!important;
-    left:calc((100dvw - 100dvh)/2)!important;
-    transform:rotate(90deg)!important;
-    position:fixed!important;
-  }
-}
+/* ── FORCE LANDSCAPE via JS orientation lock only ── */
+/* CSS rotation removed — it breaks touch coordinates */
 
 /* ── SHELL ── */
 .app{width:100vw;height:100dvh;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg);font-family:'DM Sans',sans-serif;}
@@ -364,6 +356,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;touch-action
       </div>
     </div>
   </div>
+
+
+  <!-- Rotate hint (shown if orientation lock fails) -->
+  <div id="rotate-hint" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.92);z-index:800;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:32px;">
+    <div style="font-size:3rem;animation:spin 2s linear infinite">📱</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.8rem;letter-spacing:3px;color:#fff;text-transform:uppercase">Gira el móvil</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#64748b">Esta app funciona en horizontal</div>
+  </div>
+  <style>@keyframes spin{0%{transform:rotate(0deg)}25%{transform:rotate(90deg)}75%{transform:rotate(90deg)}100%{transform:rotate(360deg)}}</style>
 
 </div><!-- .app -->
 
@@ -843,9 +844,27 @@ async function wakeLock(){ try{ if('wakeLock'in navigator) await navigator.wakeL
 wakeLock();
 
 async function lockLandscape(){
-  try{ if(screen.orientation?.lock) await screen.orientation.lock('landscape'); }catch{}
+  try{
+    if(screen.orientation && screen.orientation.lock){
+      await screen.orientation.lock('landscape');
+      console.log('Orientation locked to landscape');
+      return;
+    }
+  }catch(e){
+    console.log('Orientation lock failed:', e.message);
+    // Show a one-time hint to rotate
+    const hint = document.getElementById('rotate-hint');
+    if(hint && window.innerHeight > window.innerWidth){
+      hint.style.display = 'flex';
+      setTimeout(()=>{ hint.style.display='none'; }, 4000);
+    }
+  }
 }
 lockLandscape();
+// Re-lock on visibility change (coming back from background)
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden) lockLandscape();
+});
 
 if('serviceWorker'in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
