@@ -2,1156 +2,695 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PadelScore">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f8fafc">
 <link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>PadelScore</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@900&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
 <style>
-/* ══════════════════════════════════════
-   BASE
-══════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
 html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;touch-action:manipulation;}
+:root{--bg:#f8fafc;--t1:#1e3a5f;--t2:#7f1d1d;--green:#16a34a;--gold:#f59e0b;--border:#e2e8f0;--mid:#64748b;--dim:#94a3b8;}
 
-:root{
-  --bg:       #f8fafc;
-  --t1:       #1e3a5f;   /* deep blue  */
-  --t2:       #7f1d1d;   /* deep red   */
-  --green-flash: #16a34a;
-  --serve-green: #22c55e;
-  --text-dim: rgba(255,255,255,0.35);
-  --border:   #e2e8f0;
-}
-
-/* ══════════════════════════════════════
-   APP SHELL
-══════════════════════════════════════ */
-.app{
-  width:100%; height:100dvh;
-  display:flex; flex-direction:column;
-  overflow:hidden; position:relative;
-  background:var(--bg);
-  font-family:'DM Sans',sans-serif;
-}
-
-/* ══════════════════════════════════════
-   TOP BAR (minimal)
-══════════════════════════════════════ */
-.topbar{
-  position:absolute; top:0; left:0; right:0;
-  z-index:20;
-  display:flex; align-items:center; justify-content:space-between;
-  padding: env(safe-area-inset-top, 8px) 12px 0;
-  height: calc(env(safe-area-inset-top, 0px) + 40px);
-  pointer-events:none;
-}
-.topbar-left, .topbar-right{
-  display:flex; gap:6px; pointer-events:all;
-}
-.topbar-center{
-  display:flex; flex-direction:column; align-items:center; gap:1px;
-}
-.topbar-timer{
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:900; font-size:0.85rem; letter-spacing:2px;
-  color:rgba(0,0,0,0.3);
-  transition:color 0.3s;
-}
-.topbar-timer.on{ color:var(--green-flash); }
-.topbar-btn{
-  background:rgba(255,255,255,0.85);
-  border:1px solid var(--border); border-radius:8px;
-  width:32px; height:32px; font-size:0.9rem;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; backdrop-filter:blur(4px);
-  box-shadow:0 1px 4px rgba(0,0,0,0.08);
-}
-.topbar-btn:active{ background:rgba(200,200,200,0.9); }
-
-/* ══════════════════════════════════════
-   MAIN BOARD — two halves side by side
-══════════════════════════════════════ */
-.board{
-  flex:1;
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  min-height:0;
-  position:relative;
-}
-
-/* Center divider line */
-.board::after{
-  content:'';
-  position:absolute;
-  top:10%; bottom:10%;
-  left:50%; transform:translateX(-50%);
-  width:1px;
-  background:rgba(0,0,0,0.08);
-  z-index:1;
-}
-
-/* ── Half zones ── */
-.zone{
-  position:relative;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  cursor:pointer; overflow:hidden;
-  padding: 42px 2px 2px;
-  gap:0;
-  background: var(--bg);
-  transition: background 0.15s;
-}
-.zone:active{ filter:brightness(0.97); }
-
-/* Green flash on score */
-.zone-flash{
-  position:absolute; inset:0;
-  background: var(--green-flash);
-  opacity:0; pointer-events:none;
-  z-index:2;
-  border-radius:0;
-}
-.zone-flash.pop{
-  animation: greenPop 0.7s ease-out forwards;
-}
-@keyframes greenPop{
-  0%  { opacity:0.55; }
-  60% { opacity:0.25; }
-  100%{ opacity:0; }
-}
-
-/* ── Serve ball ── */
-.serve-ball{
-  position:absolute;
-  font-size:clamp(1.6rem, 6vw, 2.6rem);
-  opacity:0;
-  transition: opacity 0.3s, transform 0.3s;
-  transform: scale(0.6);
-  z-index:5;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
-  /* portrait: top corner */
-  top:48px; 
-}
-.z1 .serve-ball{ left:12px; }
-.z2 .serve-ball{ right:12px; }
-.zone.serving .serve-ball{
-  opacity:1; transform:scale(1);
-}
-
-/* ── Team name ── */
-.z-name{
-  font-family:'DM Sans',sans-serif; font-weight:700;
-  font-size:clamp(0.55rem, 2.5vw, 0.8rem);
-  letter-spacing:3px; text-transform:uppercase;
-  color:rgba(0,0,0,0.28);
-  position:relative; z-index:3;
-  text-align:center;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  max-width:90%;
-  margin-bottom:2px;
-  transition:color 0.2s;
-}
-.zone.serving .z-name{ color:var(--serve-green); }
-
-/* ══ BIG POINT NUMBER ══ */
-.z-pt{
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:900;
-  /* MAXIMUM SIZE — fills almost entire half */
-  font-size: min(45vw, 78vh);
-  line-height:0.78;
-  letter-spacing:-6px;
-  text-align:center;
-  position:relative; z-index:3;
-  color:#1e293b;
-  transition: color 0.2s;
-  will-change:transform;
-  /* stretch to fill available space */
-  display:flex; align-items:center; justify-content:center;
-  width:100%;
-}
-.z1 .z-pt{ color: var(--t1); }
-.z2 .z-pt{ color: var(--t2); }
-
-/* pop animation on score */
-.z-pt.bump{
-  animation: ptBump 0.28s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes ptBump{ 0%{transform:scale(1.3)} 100%{transform:scale(1)} }
-
-/* ── Games count ── */
-.z-games{
-  font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size: clamp(1.5rem, 7vw, 4rem);
-  color:rgba(0,0,0,0.12);
-  letter-spacing:-2px; line-height:1;
-  position:relative; z-index:3;
-  margin-top:4px;
-  transition:color 0.2s;
-}
-.zone.serving .z-games{ color:rgba(34,197,94,0.25); }
-.z1 .z-games{ color:rgba(30,58,95,0.18); }
-.z2 .z-games{ color:rgba(127,29,29,0.18); }
-
-/* ── JUEGOS label ── */
-.z-lbl{
-  font-family:'DM Sans',sans-serif; font-weight:500;
-  font-size:clamp(0.38rem,1.2vw,0.55rem);
-  letter-spacing:3px; text-transform:uppercase;
-  color:rgba(0,0,0,0.15);
-  position:relative; z-index:3;
-  margin-top:2px;
-}
-
-/* ══════════════════════════════════════
-   CENTER OVERLAY (sets + serve info)
-   Floats in the middle over the divider
-══════════════════════════════════════ */
-.center-panel{
-  position:absolute;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  z-index:10;
-  display:flex; flex-direction:column;
-  align-items:center; gap:5px;
-  width:clamp(90px, 22vw, 130px);
-  pointer-events:none;
-}
-
-.sets-pill{
-  background:rgba(15,23,42,0.88);
-  border-radius:14px;
-  padding:8px 14px;
-  display:flex; align-items:center; gap:6px;
-  box-shadow:0 4px 16px rgba(0,0,0,0.18);
-  backdrop-filter:blur(4px);
-  width:100%;
-  justify-content:center;
-}
-.sp-num{
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:900; font-size:1.6rem; line-height:1;
-  color:#fff;
-}
-.sp-num.c1{ color:#93c5fd; }
-.sp-num.c2{ color:#fca5a5; }
-.sp-dash{ font-size:0.65rem; color:#475569; }
-
-/* Set history card */
-.set-hist{
-  background:rgba(255,255,255,0.92);
-  border:1px solid rgba(0,0,0,0.07);
-  border-radius:10px;
-  padding:6px 10px;
-  width:100%;
-  box-shadow:0 2px 10px rgba(0,0,0,0.08);
-  backdrop-filter:blur(4px);
-  display:flex; flex-direction:column; gap:1px;
-}
-.sh-row{
-  display:grid;
-  grid-template-columns:1fr auto 1fr auto;
-  align-items:center; gap:2px;
-  padding:2px 0;
-}
-.sh-row:not(:last-child){ border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:4px; margin-bottom:1px; }
-.sh-s1,.sh-s2{
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:900; font-size:1.3rem; line-height:1; text-align:center;
-  color:#64748b;
-}
-.sh-s1.won{ color:var(--t1); }
-.sh-s2.won{ color:var(--t2); }
-.sh-s1.cur,.sh-s2.cur{ color:#0f172a; font-size:1.5rem; }
-.sh-dash{ font-size:0.55rem; color:#cbd5e1; text-align:center; }
-.sh-time{ font-size:0.45rem; color:#94a3b8; letter-spacing:1px; text-align:right; white-space:nowrap; }
-.sh-time.cur{ color:var(--green-flash); font-weight:700; }
-
-/* Side change badge */
-.side-badge{
-  background:rgba(245,158,11,0.95);
-  border-radius:8px; padding:4px 8px;
-  width:100%; text-align:center;
-  font-family:'DM Sans',sans-serif; font-weight:700;
-  font-size:0.5rem; letter-spacing:1px; color:#fff;
-  display:none;
-  box-shadow:0 2px 8px rgba(245,158,11,0.4);
-}
-.side-badge.show{ display:block; animation:badgePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-@keyframes badgePop{ 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
-
-/* ══════════════════════════════════════
-   BOTTOM BAR
-══════════════════════════════════════ */
-.bar{
-  background:rgba(255,255,255,0.95);
-  border-top:1px solid var(--border);
-  display:flex; align-items:stretch;
-  flex-shrink:0; height:58px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  backdrop-filter:blur(8px);
-  box-shadow:0 -2px 12px rgba(0,0,0,0.06);
-}
-.btn-undo{
-  flex:0 0 auto; background:transparent; border:none;
-  border-right:1px solid var(--border);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:2px; padding:0 22px; cursor:pointer; color:#64748b;
-  transition:background 0.15s;
-}
-.btn-undo:active{ background:#fee2e2; color:#dc2626; }
-.btn-undo .ui{ font-size:1.3rem; line-height:1; }
-.btn-undo .ul{ font-family:'DM Sans',sans-serif; font-weight:700; font-size:0.45rem; letter-spacing:2px; text-transform:uppercase; }
-.bar-space{ flex:1; }
-.bar-btns{ display:flex; align-items:stretch; }
-.bar-btn{
-  background:transparent; border:none; border-left:1px solid var(--border);
-  color:#94a3b8; font-size:1rem; width:54px;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
-  cursor:pointer; transition:background 0.15s;
-}
-.bar-btn:active{ background:var(--border); color:#0f172a; }
-.bar-btn small{ font-size:0.38rem; letter-spacing:1px; text-transform:uppercase; color:#cbd5e1; }
-
-/* ══════════════════════════════════════
-   TOAST
-══════════════════════════════════════ */
-.toast{
-  position:fixed; top:50%; left:50%;
-  transform:translate(-50%,-50%) scale(0.8);
-  background:rgba(15,23,42,0.92); color:#fff;
-  border-radius:14px; font-family:'Barlow Condensed',sans-serif;
-  font-size:clamp(1rem,5vw,1.6rem); font-weight:700; letter-spacing:4px;
-  padding:12px 24px; opacity:0;
-  transition:opacity 0.15s,transform 0.15s;
-  pointer-events:none; z-index:200; white-space:nowrap;
-}
-.toast.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
-.toast.gold{ background:rgba(245,158,11,0.95); }
-
-/* ══════════════════════════════════════
-   SERVE MODAL
-══════════════════════════════════════ */
-.serve-modal{
-  position:fixed; inset:0; background:rgba(15,23,42,0.85);
-  z-index:600; display:none; align-items:center; justify-content:center;
-  padding:24px; animation:pfIn 0.2s ease;
-}
-.serve-modal.show{ display:flex; }
-.sm-box{
-  background:#fff; border-radius:24px; padding:28px 20px;
-  width:100%; max-width:320px;
-  display:flex; flex-direction:column; gap:14px;
-  box-shadow:0 8px 40px rgba(0,0,0,0.2);
-}
-.sm-title{ font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1.5rem; letter-spacing:2px; text-transform:uppercase; text-align:center; color:#0f172a; }
-.sm-sub{ font-family:'DM Sans',sans-serif; font-size:0.78rem; color:#64748b; text-align:center; }
-.sm-btn{
-  background:#f8fafc; border:2px solid #e2e8f0; border-radius:14px;
-  padding:16px; cursor:pointer; text-align:center;
-  transition:border-color 0.15s, background 0.15s;
-}
-.sm-btn.t1{ border-color:var(--t1); background:rgba(30,58,95,0.04); }
-.sm-btn.t2{ border-color:var(--t2); background:rgba(127,29,29,0.04); }
-.sm-btn-name{ font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1.3rem; letter-spacing:2px; color:#0f172a; }
-.sm-btn-sub{ font-family:'DM Sans',sans-serif; font-size:0.62rem; color:#64748b; margin-top:2px; }
-
-/* ══════════════════════════════════════
-   SIDE CHANGE OVERLAY
-══════════════════════════════════════ */
-.side-overlay{
-  position:fixed; inset:0;
-  background:rgba(245,158,11,0.97); z-index:400;
-  display:none; flex-direction:column;
-  align-items:center; justify-content:center;
-  gap:16px; padding:32px; text-align:center;
-}
-.side-overlay.show{ display:flex; animation:pfIn 0.3s ease; }
-@keyframes pfIn{ from{opacity:0} to{opacity:1} }
-.so-ico{ font-size:3.5rem; }
-.so-title{ font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:clamp(2rem,10vw,3.5rem); letter-spacing:3px; color:#fff; text-transform:uppercase; }
-.so-sub{ font-family:'DM Sans',sans-serif; font-size:0.9rem; color:rgba(255,255,255,0.85); }
-.so-btn{ background:#fff; border:none; color:#b45309; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1.1rem; letter-spacing:3px; padding:16px 36px; border-radius:12px; cursor:pointer; text-transform:uppercase; }
-
-/* ══════════════════════════════════════
-   BOTTOM SHEETS
-══════════════════════════════════════ */
-.panel{ position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:300; display:none; align-items:flex-end; }
-.panel.show{ display:flex; animation:pfIn 0.2s ease; }
-.panel-sheet{
-  background:#fff; border-radius:24px 24px 0 0;
-  width:100%; padding:20px 20px 40px;
-  display:flex; flex-direction:column; gap:14px;
-  box-shadow:0 -4px 40px rgba(0,0,0,0.15);
-  animation:sheetUp 0.3s cubic-bezier(0.34,1.2,0.64,1);
-  max-height:90vh; overflow-y:auto;
-}
-@keyframes sheetUp{ from{transform:translateY(100%)} to{transform:translateY(0)} }
-.sheet-handle{ width:40px; height:4px; background:#e2e8f0; border-radius:2px; margin:0 auto 4px; }
-.sheet-header{ display:flex; align-items:center; justify-content:space-between; }
-.sheet-title{ font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1.4rem; letter-spacing:2px; color:#0f172a; text-transform:uppercase; }
-.sheet-close{
-  background:#f1f5f9; border:none; border-radius:50%;
-  width:36px; height:36px; font-size:1rem;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; color:#64748b; flex-shrink:0;
-  transition:background 0.15s, color 0.15s;
-}
-.sheet-close:active{ background:#e2e8f0; color:#0f172a; }
-.sheet-divider{ height:1px; background:#e2e8f0; margin:4px 0; }
-
-.nfield{ display:flex; flex-direction:column; gap:6px; }
-.nfield label{ font-family:'DM Sans',sans-serif; font-weight:700; font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; }
-.nfield.f1 label{ color:var(--t1); } .nfield.f2 label{ color:var(--t2); }
-.ninput{ background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; color:#0f172a; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:1.3rem; letter-spacing:2px; padding:12px 14px; outline:none; width:100%; text-transform:uppercase; transition:border-color 0.2s; }
-.nfield.f1 .ninput:focus{ border-color:var(--t1); } .nfield.f2 .ninput:focus{ border-color:var(--t2); }
-.save-btn{ background:#0f172a; border:none; color:#fff; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1rem; letter-spacing:3px; text-transform:uppercase; padding:16px; border-radius:12px; cursor:pointer; width:100%; }
-
-.setting-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f1f5f9; }
-.setting-row:last-of-type{ border-bottom:none; }
-.sr-info{ display:flex; flex-direction:column; gap:2px; flex:1; padding-right:16px; }
-.sr-label{ font-family:'DM Sans',sans-serif; font-weight:700; font-size:0.85rem; color:#0f172a; }
-.sr-desc{ font-family:'DM Sans',sans-serif; font-size:0.7rem; color:#94a3b8; line-height:1.4; }
-.toggle{ position:relative; width:48px; height:28px; flex-shrink:0; }
-.toggle input{ opacity:0; width:0; height:0; }
-.toggle-track{ position:absolute; inset:0; background:#e2e8f0; border-radius:14px; cursor:pointer; transition:background 0.2s; }
-.toggle input:checked+.toggle-track{ background:#2563eb; }
-.toggle-track::after{ content:''; position:absolute; width:22px; height:22px; border-radius:50%; background:#fff; top:3px; left:3px; transition:transform 0.2s; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
-.toggle input:checked+.toggle-track::after{ transform:translateX(20px); }
-
-.serve-override{ display:flex; gap:8px; }
-.so-pick{ flex:1; background:#f8fafc; border:2px solid #e2e8f0; border-radius:10px; padding:10px 6px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:0.85rem; letter-spacing:2px; color:#0f172a; text-align:center; }
-.so-pick.at1{ border-color:var(--t1); background:rgba(30,58,95,0.06); }
-.so-pick.at2{ border-color:var(--t2); background:rgba(127,29,29,0.06); }
-
-.hook-block{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; }
-.hook-lbl{ font-family:'DM Sans',sans-serif; font-weight:700; font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
-.hook-lbl.c1{ color:var(--t1); } .hook-lbl.c2{ color:var(--t2); }
-.hook-url{ font-family:'DM Sans',monospace; font-size:0.7rem; color:#0f172a; word-break:break-all; line-height:1.5; margin-bottom:8px; }
-.hook-copy{ background:#0f172a; border:none; color:#fff; font-family:'DM Sans',sans-serif; font-weight:700; font-size:0.6rem; letter-spacing:1px; padding:6px 14px; border-radius:8px; cursor:pointer; }
-.hook-copy.ok{ background:#16a34a; }
-.hook-info{ font-family:'DM Sans',sans-serif; font-size:0.65rem; color:#94a3b8; line-height:1.8; }
-.hook-info b{ color:#0f172a; }
-
-/* ══════════════════════════════════════
-   WIN SCREEN
-══════════════════════════════════════ */
-.win{ position:fixed; inset:0; background:linear-gradient(160deg,#0f172a,#1e293b); z-index:500; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:32px; text-align:center; }
-.win.show{ display:flex; animation:pfIn 0.5s ease; }
-.win-ico{ font-size:3rem; animation:wb 0.9s ease infinite alternate; }
-@keyframes wb{ from{transform:translateY(0)} to{transform:translateY(-12px)} }
-.win-lbl{ font-family:'DM Sans',sans-serif; font-size:0.7rem; letter-spacing:4px; color:#64748b; text-transform:uppercase; }
-.win-name{ font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:clamp(2.5rem,12vw,5rem); letter-spacing:4px; line-height:1; }
-.win-name.c1{ color:#93c5fd; } .win-name.c2{ color:#fca5a5; }
-.win-sets{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:1.8rem; color:#fff; letter-spacing:6px; }
-.win-time{ font-family:'DM Sans',monospace; font-size:0.8rem; color:#475569; letter-spacing:3px; }
-.win-btn{ margin-top:12px; background:#fff; border:none; color:#0f172a; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1rem; letter-spacing:3px; text-transform:uppercase; padding:16px 36px; border-radius:12px; cursor:pointer; }
-
-/* ══════════════════════════════════════
-   LANDSCAPE ADJUSTMENTS
-══════════════════════════════════════ */
-@media (orientation:landscape){
-  .topbar{ height:calc(env(safe-area-inset-top,0px) + 34px); }
-  .zone{ padding-top:40px; }
-  .z-pt{ font-size:min(44vw, 80vh) !important; }
-  .z-games{ font-size:clamp(1.4rem,8vh,4rem) !important; }
-  .bar{ height:46px; }
-  .btn-undo{ padding:0 16px; }
-  .center-panel{ width:clamp(80px,18vw,110px); }
-  .sp-num{ font-size:1.3rem; }
-  .sh-s1,.sh-s2{ font-size:1.1rem; }
-  .sh-s1.cur,.sh-s2.cur{ font-size:1.3rem; }
-}
-.app.land .z-pt{ font-size:min(44vw, 80vh) !important; }
-.app.land .z-games{ font-size:clamp(1.4rem,8vh,4rem) !important; }
-.app.land .bar{ height:46px; }
-.app.land .center-panel{ width:clamp(80px,18vw,110px); }
-
-/* ══════════════════════════════════════
-   FORCE LANDSCAPE — rotate when portrait
-══════════════════════════════════════ */
-
-/* When device is in portrait: rotate the whole app 90deg */
-@media (orientation: portrait) {
-  body {
-    overflow: hidden;
-  }
-  .app {
-    position: fixed;
-    /* rotate and reposition to fill screen as landscape */
-    width: 100dvh;
-    height: 100dvw;
-    top: calc((100dvh - 100dvw) / 2);
-    left: calc((100dvw - 100dvh) / 2);
-    transform: rotate(90deg);
-    transform-origin: center center;
+/* ── FORCE LANDSCAPE ── */
+@media (orientation:portrait){
+  .app{
+    width:100dvh!important;height:100dvw!important;
+    top:calc((100dvh - 100dvw)/2)!important;
+    left:calc((100dvw - 100dvh)/2)!important;
+    transform:rotate(90deg)!important;
+    position:fixed!important;
   }
 }
 
+/* ── SHELL ── */
+.app{width:100vw;height:100dvh;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg);font-family:'DM Sans',sans-serif;}
 
-/* ── Side change TOAST (non-blocking) ── */
-.side-toast{
-  position:fixed;
-  bottom:80px; left:50%;
-  transform:translateX(-50%) translateY(20px);
-  background:rgba(245,158,11,0.95);
-  color:#fff;
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:900; font-size:1.1rem; letter-spacing:3px;
-  padding:12px 24px; border-radius:14px;
-  pointer-events:none; z-index:150;
-  opacity:0; transition:opacity 0.3s, transform 0.3s;
-  white-space:nowrap;
-  box-shadow:0 4px 20px rgba(245,158,11,0.4);
-}
-.side-toast.show{
-  opacity:1; transform:translateX(-50%) translateY(0);
-}
+/* ── TOPBAR ── */
+.topbar{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;height:44px;pointer-events:none;}
+.topbar-left,.topbar-right{display:flex;gap:6px;pointer-events:all;}
+.tb-timer{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:0.9rem;letter-spacing:2px;color:rgba(0,0,0,0.25);transition:color 0.3s;}
+.tb-timer.on{color:var(--green);}
+.tb-btn{background:rgba(255,255,255,0.85);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;font-size:0.9rem;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);}
+.tb-btn:active{background:#e2e8f0;}
 
+/* ── BOARD: two halves ── */
+.board{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0;position:relative;}
+.board::after{content:'';position:absolute;top:8%;bottom:8%;left:50%;transform:translateX(-50%);width:1px;background:rgba(0,0,0,0.07);z-index:1;}
+
+/* ── ZONES ── */
+.zone{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;padding:44px 4px 4px;background:var(--bg);transition:background 0.15s;}
+.zone:active{filter:brightness(0.96);}
+
+/* green flash on score */
+.zflash{position:absolute;inset:0;background:var(--green);opacity:0;pointer-events:none;z-index:2;}
+.zflash.go{animation:gflash 0.65s ease-out forwards;}
+@keyframes gflash{0%{opacity:0.5}100%{opacity:0}}
+
+/* serve ball */
+.sball{position:absolute;top:10px;font-size:clamp(1.4rem,5vw,2.2rem);opacity:0;transform:scale(0.5);transition:opacity 0.3s,transform 0.3s;z-index:5;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));}
+.z1 .sball{left:10px;}.z2 .sball{right:10px;}
+.zone.srv .sball{opacity:1;transform:scale(1);}
+
+/* team name */
+.zname{font-family:'DM Sans',sans-serif;font-weight:700;font-size:clamp(0.5rem,2.2vw,0.75rem);letter-spacing:3px;text-transform:uppercase;color:rgba(0,0,0,0.22);position:relative;z-index:3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90%;margin-bottom:2px;transition:color 0.2s;}
+.zone.srv .zname{color:var(--green);}
+
+/* BIG point number */
+.zpt{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:min(44vw,80vh);line-height:0.82;letter-spacing:-4px;text-align:center;position:relative;z-index:3;will-change:transform;}
+.z1 .zpt{color:var(--t1);}.z2 .zpt{color:var(--t2);}
+.zpt.bump{animation:ptbump 0.25s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes ptbump{0%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+/* games count */
+.zgames{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1.5rem,7vw,3.5rem);line-height:1;position:relative;z-index:3;margin-top:4px;}
+.z1 .zgames{color:rgba(30,58,95,0.18);}.z2 .zgames{color:rgba(127,29,29,0.18);}
+.zone.srv .zgames{color:rgba(34,197,94,0.22);}
+.zlbl{font-size:clamp(0.35rem,1vw,0.5rem);letter-spacing:3px;text-transform:uppercase;color:rgba(0,0,0,0.12);position:relative;z-index:3;margin-top:2px;}
+
+/* ── CENTER PANEL (floats over divider) ── */
+.cpanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:5px;width:clamp(88px,20vw,120px);pointer-events:none;}
+.sets-pill{background:rgba(15,23,42,0.88);border-radius:12px;padding:6px 12px;display:flex;align-items:center;gap:5px;width:100%;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.18);}
+.sp{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.5rem;line-height:1;color:#fff;}
+.sp.c1{color:#93c5fd;}.sp.c2{color:#fca5a5;}
+.spdash{font-size:0.6rem;color:#475569;}
+.sethist{background:rgba(255,255,255,0.93);border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:5px 8px;width:100%;box-shadow:0 2px 10px rgba(0,0,0,0.08);}
+.shrow{display:grid;grid-template-columns:1fr auto 1fr auto;align-items:center;gap:2px;padding:2px 0;}
+.shrow:not(:last-child){border-bottom:1px solid rgba(0,0,0,0.06);padding-bottom:3px;margin-bottom:2px;}
+.shs1,.shs2{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.2rem;line-height:1;text-align:center;color:#64748b;}
+.shs1.won{color:var(--t1);}.shs2.won{color:var(--t2);}
+.shs1.cur,.shs2.cur{color:#0f172a;font-size:1.4rem;}
+.shdash{font-size:0.5rem;color:#cbd5e1;text-align:center;}
+.shtime{font-size:0.42rem;color:#94a3b8;letter-spacing:1px;white-space:nowrap;}
+.shtime.cur{color:var(--green);font-weight:700;}
+
+/* ── BOTTOM BAR ── */
+.bar{background:rgba(255,255,255,0.96);border-top:1px solid var(--border);display:flex;align-items:stretch;flex-shrink:0;height:56px;box-shadow:0 -2px 10px rgba(0,0,0,0.05);}
+.undoBtn{flex:0 0 auto;background:transparent;border:none;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 20px;cursor:pointer;color:var(--mid);}
+.undoBtn:active{background:#fee2e2;color:#dc2626;}
+.undoBtn .ui{font-size:1.3rem;line-height:1;}.undoBtn .ul{font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.42rem;letter-spacing:2px;text-transform:uppercase;}
+.barspace{flex:1;}
+.barbtns{display:flex;align-items:stretch;}
+.barbtn{background:transparent;border:none;border-left:1px solid var(--border);color:var(--dim);font-size:1rem;width:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;transition:background 0.15s;}
+.barbtn:active{background:var(--border);color:#0f172a;}
+.barbtn small{font-size:0.36rem;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
+
+/* ── TOASTS ── */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);background:rgba(15,23,42,0.92);color:#fff;border-radius:14px;font-family:'Barlow Condensed',sans-serif;font-size:clamp(1rem,4vw,1.5rem);font-weight:900;letter-spacing:4px;padding:12px 24px;opacity:0;transition:opacity 0.15s,transform 0.15s;pointer-events:none;z-index:250;white-space:nowrap;}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+.toast.gold{background:rgba(245,158,11,0.95);}
+/* side change toast — non blocking */
+.sidetoast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(245,158,11,0.95);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;padding:10px 22px;border-radius:12px;pointer-events:none;z-index:150;opacity:0;transition:opacity 0.3s,transform 0.3s;white-space:nowrap;}
+.sidetoast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── MODALS / PANELS ── */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:300;display:none;align-items:flex-end;}
+.overlay.show{display:flex;animation:pfIn 0.2s ease;}
+@keyframes pfIn{from{opacity:0}to{opacity:1}}
+.sheet{background:#fff;border-radius:24px 24px 0 0;width:100%;padding:18px 18px 40px;display:flex;flex-direction:column;gap:13px;box-shadow:0 -4px 40px rgba(0,0,0,0.15);animation:shUp 0.3s cubic-bezier(0.34,1.2,0.64,1);max-height:90vh;overflow-y:auto;}
+@keyframes shUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.shandle{width:40px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 2px;}
+.shhead{display:flex;align-items:center;justify-content:space-between;}
+.shtitle{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.35rem;letter-spacing:2px;color:#0f172a;text-transform:uppercase;}
+.shclose{background:#f1f5f9;border:none;border-radius:50%;width:36px;height:36px;font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mid);flex-shrink:0;}
+.shclose:active{background:#e2e8f0;}
+.shdiv{height:1px;background:#f1f5f9;margin:2px 0;}
+
+/* name inputs */
+.nfield{display:flex;flex-direction:column;gap:5px;}
+.nfield label{font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;}
+.nfield.f1 label{color:var(--t1);}.nfield.f2 label{color:var(--t2);}
+.ninput{background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;color:#0f172a;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:2px;padding:11px 14px;outline:none;width:100%;text-transform:uppercase;}
+.nfield.f1 .ninput:focus{border-color:var(--t1);}.nfield.f2 .ninput:focus{border-color:var(--t2);}
+.savebtn{background:#0f172a;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;text-transform:uppercase;padding:15px;border-radius:12px;cursor:pointer;width:100%;}
+.savebtn:active{opacity:0.85;}
+.savebtn.green{background:var(--green);}.savebtn.grey{background:#f1f5f9;color:var(--mid);}
+
+/* settings rows */
+.setrow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f8fafc;}
+.setrow:last-of-type{border-bottom:none;}
+.srinfo{display:flex;flex-direction:column;gap:2px;flex:1;padding-right:14px;}
+.srlabel{font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.82rem;color:#0f172a;}
+.srdesc{font-family:'DM Sans',sans-serif;font-size:0.67rem;color:var(--dim);line-height:1.4;}
+.toggle{position:relative;width:46px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.ttrack{position:absolute;inset:0;background:#e2e8f0;border-radius:13px;cursor:pointer;transition:background 0.2s;}
+.toggle input:checked+.ttrack{background:#2563eb;}
+.ttrack::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+.toggle input:checked+.ttrack::after{transform:translateX(20px);}
+
+/* serve override */
+.srvbtns{display:flex;gap:8px;}
+.srvpick{flex:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:10px 6px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:0.82rem;letter-spacing:2px;color:#0f172a;text-align:center;}
+.srvpick.at1{border-color:var(--t1);background:rgba(30,58,95,0.05);}
+.srvpick.at2{border-color:var(--t2);background:rgba(127,29,29,0.05);}
+
+/* hook blocks */
+.hookblock{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:11px;}
+.hooklbl{font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:5px;}
+.hooklbl.c1{color:var(--t1);}.hooklbl.c2{color:var(--t2);}
+.hookurl{font-family:monospace;font-size:0.68rem;color:#0f172a;word-break:break-all;line-height:1.5;margin-bottom:7px;}
+.hookcopy{background:#0f172a;border:none;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.58rem;letter-spacing:1px;padding:5px 12px;border-radius:7px;cursor:pointer;}
+.hookcopy.ok{background:var(--green);}
+.hookinfo{font-family:'DM Sans',sans-serif;font-size:0.62rem;color:var(--dim);line-height:1.8;}
+.hookinfo b{color:#0f172a;}
+
+/* ── SERVE MODAL ── */
+.servemodal{position:fixed;inset:0;background:rgba(15,23,42,0.88);z-index:600;display:none;align-items:center;justify-content:center;padding:24px;}
+.servemodal.show{display:flex;animation:pfIn 0.2s ease;}
+.smbox{background:#fff;border-radius:22px;padding:26px 18px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:13px;box-shadow:0 8px 40px rgba(0,0,0,0.25);}
+.smtitle{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:2px;text-transform:uppercase;text-align:center;color:#0f172a;}
+.smsub{font-family:'DM Sans',sans-serif;font-size:0.76rem;color:var(--mid);text-align:center;}
+.smbtn{background:#f8fafc;border:2px solid #e2e8f0;border-radius:13px;padding:15px;cursor:pointer;text-align:center;}
+.smbtn.t1{border-color:var(--t1);background:rgba(30,58,95,0.04);}
+.smbtn.t2{border-color:var(--t2);background:rgba(127,29,29,0.04);}
+.smname{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.25rem;letter-spacing:2px;color:#0f172a;}
+.smsub2{font-family:'DM Sans',sans-serif;font-size:0.6rem;color:var(--mid);margin-top:2px;}
+
+/* ── RESUME DIALOG ── */
+.resumedialog{position:fixed;inset:0;background:rgba(15,23,42,0.88);z-index:600;display:none;align-items:center;justify-content:center;padding:24px;}
+.resumedialog.show{display:flex;animation:pfIn 0.2s ease;}
+.rdbox{background:#fff;border-radius:22px;padding:26px 18px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;align-items:center;box-shadow:0 8px 40px rgba(0,0,0,0.25);}
+.rdico{font-size:2.5rem;}
+.rdtitle{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.35rem;letter-spacing:2px;text-align:center;color:#0f172a;text-transform:uppercase;}
+.rdinfo{font-family:'DM Sans',sans-serif;font-size:0.8rem;color:var(--mid);text-align:center;line-height:1.7;}
+
+/* ── WIN SCREEN ── */
+.win{position:fixed;inset:0;background:linear-gradient(160deg,#0f172a,#1e293b);z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;text-align:center;}
+.win.show{display:flex;animation:pfIn 0.4s ease;}
+.winico{font-size:3rem;animation:wb 0.9s ease infinite alternate;}
+@keyframes wb{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.winlbl{font-family:'DM Sans',sans-serif;font-size:0.68rem;letter-spacing:4px;color:#475569;text-transform:uppercase;}
+.winname{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(2.2rem,10vw,4.5rem);letter-spacing:4px;line-height:1;}
+.winname.c1{color:#93c5fd;}.winname.c2{color:#fca5a5;}
+.winsets{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;color:#fff;letter-spacing:5px;}
+.wintime{font-family:monospace;font-size:0.78rem;color:#475569;letter-spacing:3px;}
+.winbtn{margin-top:8px;background:#fff;border:none;color:#0f172a;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;text-transform:uppercase;padding:15px 34px;border-radius:12px;cursor:pointer;}
 </style>
 </head>
 <body>
 <div class="app" id="app">
 
-  <!-- ══ TOP BAR ══ -->
+  <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <button class="topbar-btn" onclick="undoPoint()" title="Deshacer">↩</button>
+      <button class="tb-btn" onclick="undoPoint()">↩</button>
     </div>
-    <div class="topbar-center">
-      <div class="topbar-timer" id="timer">00:00</div>
-    </div>
+    <div class="tb-timer" id="timer">00:00</div>
     <div class="topbar-right">
-      <button class="topbar-btn" onclick="openSettings()">⚙️</button>
-      <button class="topbar-btn" onclick="openNames()">✎</button>
+      <button class="tb-btn" onclick="openPanel('settings')">⚙️</button>
+      <button class="tb-btn" onclick="openPanel('names')">✎</button>
     </div>
   </div>
 
-  <!-- ══ BOARD ══ -->
+  <!-- BOARD -->
   <div class="board">
-
-    <!-- Team 1 — LEFT -->
     <div class="zone z1" id="z1" onclick="addPoint(1)">
-      <div class="zone-flash" id="fl1"></div>
-      <div class="serve-ball">🎾</div>
-      <div class="z-name" id="nm1">PAREJA 1</div>
-      <div class="z-pt"   id="pt1">0</div>
-      <div class="z-games" id="gm1">0</div>
-      <div class="z-lbl">juegos</div>
+      <div class="zflash" id="fl1"></div>
+      <div class="sball">🎾</div>
+      <div class="zname" id="nm1">PAREJA 1</div>
+      <div class="zpt"   id="pt1">0</div>
+      <div class="zgames" id="gm1">0</div>
+      <div class="zlbl">juegos</div>
     </div>
-
-    <!-- Team 2 — RIGHT -->
     <div class="zone z2" id="z2" onclick="addPoint(2)">
-      <div class="zone-flash" id="fl2"></div>
-      <div class="serve-ball">🎾</div>
-      <div class="z-name" id="nm2">PAREJA 2</div>
-      <div class="z-pt"   id="pt2">0</div>
-      <div class="z-games" id="gm2">0</div>
-      <div class="z-lbl">juegos</div>
+      <div class="zflash" id="fl2"></div>
+      <div class="sball">🎾</div>
+      <div class="zname" id="nm2">PAREJA 2</div>
+      <div class="zpt"   id="pt2">0</div>
+      <div class="zgames" id="gm2">0</div>
+      <div class="zlbl">juegos</div>
     </div>
 
-    <!-- CENTER PANEL (floats over divider) -->
-    <div class="center-panel">
+    <!-- CENTER PANEL -->
+    <div class="cpanel">
       <div class="sets-pill">
-        <span class="sp-num c1" id="ts1">0</span>
-        <span class="sp-dash">–</span>
-        <span class="sp-num c2" id="ts2">0</span>
+        <span class="sp c1" id="ts1">0</span>
+        <span class="spdash">–</span>
+        <span class="sp c2" id="ts2">0</span>
       </div>
-      <div class="set-hist" id="set-hist"></div>
-      <div class="side-badge" id="side-badge">↔ LADO</div>
+      <div class="sethist" id="sethist"></div>
     </div>
-
   </div>
 
-  <!-- ══ BOTTOM BAR ══ -->
+  <!-- BAR -->
   <div class="bar">
-    <button class="btn-undo" onclick="undoPoint()">
-      <span class="ui">↩</span>
-      <span class="ul">Deshacer</span>
+    <button class="undoBtn" onclick="undoPoint()">
+      <span class="ui">↩</span><span class="ul">Deshacer</span>
     </button>
-    <div class="bar-space"></div>
-    <div class="bar-btns">
-      <button class="bar-btn" onclick="openSettings()">⚙️<small>Ajustes</small></button>
-      <button class="bar-btn" onclick="resetMatch()">↺<small>Reset</small></button>
+    <div class="barspace"></div>
+    <div class="barbtns">
+      <button class="barbtn" onclick="openPanel('settings')">⚙️<small>Ajustes</small></button>
+      <button class="barbtn" onclick="resetMatch()">↺<small>Reset</small></button>
     </div>
   </div>
 
-  <!-- Toast -->
+  <!-- TOASTS -->
   <div class="toast" id="toast"></div>
-  <!-- Side change toast (non-blocking) -->
-  <div class="side-toast" id="side-toast">↔ CAMBIO DE LADO</div>
+  <div class="sidetoast" id="sidetoast"></div>
 
-  <!-- Serve modal -->
-  <div class="serve-modal" id="serve-modal">
-    <div class="sm-box">
-      <div class="sm-title">🎾 ¿Quién saca?</div>
-      <div class="sm-sub">El saque rotará automáticamente cada juego</div>
-      <button class="sm-btn t1" onclick="selectServe(1)">
-        <div class="sm-btn-name" id="sm-nm1">PAREJA 1</div>
-        <div class="sm-btn-sub">Saca primero</div>
+  <!-- SERVE MODAL -->
+  <div class="servemodal" id="servemodal">
+    <div class="smbox">
+      <div class="smtitle">🎾 ¿Quién saca?</div>
+      <div class="smsub">El saque rotará automáticamente cada juego</div>
+      <button class="smbtn t1" onclick="selectServe(1)">
+        <div class="smname" id="smnm1">PAREJA 1</div>
+        <div class="smsub2">Saca primero</div>
       </button>
-      <button class="sm-btn t2" onclick="selectServe(2)">
-        <div class="sm-btn-name" id="sm-nm2">PAREJA 2</div>
-        <div class="sm-btn-sub">Saca primero</div>
+      <button class="smbtn t2" onclick="selectServe(2)">
+        <div class="smname" id="smnm2">PAREJA 2</div>
+        <div class="smsub2">Saca primero</div>
       </button>
     </div>
   </div>
 
-  <!-- Side change overlay -->
-  <div class="side-overlay" id="side-overlay">
-    <div class="so-ico">↔</div>
-    <div class="so-title">Cambio de lado</div>
-    <div class="so-sub" id="so-sub">Toca para continuar</div>
-    <button class="so-btn" onclick="dismissSide()">CONTINUAR →</button>
+  <!-- RESUME DIALOG -->
+  <div class="resumedialog" id="resumedialog">
+    <div class="rdbox">
+      <div class="rdico">🎾</div>
+      <div class="rdtitle">Partida guardada</div>
+      <div class="rdinfo" id="rdinfo"></div>
+      <button class="savebtn green" onclick="resumeYes()">Continuar partida →</button>
+      <button class="savebtn grey"  onclick="resumeNo()">Nueva partida</button>
+    </div>
   </div>
 
-  <!-- Win screen -->
+  <!-- WIN -->
   <div class="win" id="win">
-    <div class="win-ico">🏆</div>
-    <div class="win-lbl">Ganador del partido</div>
-    <div class="win-name" id="win-name"></div>
-    <div class="win-sets"  id="win-sets"></div>
-    <div class="win-time"  id="win-time"></div>
-    <button class="win-btn" onclick="resetMatch()">Nuevo partido</button>
+    <div class="winico">🏆</div>
+    <div class="winlbl">Ganador del partido</div>
+    <div class="winname" id="winname"></div>
+    <div class="winsets" id="winsets"></div>
+    <div class="wintime" id="wintime"></div>
+    <button class="winbtn" onclick="resetMatch()">Nuevo partido</button>
   </div>
 
-  <!-- Names panel -->
-  <div class="panel" id="names-panel" onclick="panelClose('names-panel',event)">
-    <div class="panel-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-title">Nombres</div>
-        <button class="sheet-close" onclick="panelClose('names-panel')">✕</button>
+  <!-- NAMES PANEL -->
+  <div class="overlay" id="names-panel" onclick="backdropClose('names-panel',event)">
+    <div class="sheet">
+      <div class="shandle"></div>
+      <div class="shhead">
+        <div class="shtitle">Nombres</div>
+        <button class="shclose" onclick="closePanel('names-panel')">✕</button>
       </div>
       <div class="nfield f1"><label>Pareja 1</label><input class="ninput" id="ni1" maxlength="14" placeholder="PAREJA 1"></div>
       <div class="nfield f2"><label>Pareja 2</label><input class="ninput" id="ni2" maxlength="14" placeholder="PAREJA 2"></div>
-      <button class="save-btn" onclick="saveNames()">Guardar</button>
+      <button class="savebtn" onclick="saveNames()">Guardar</button>
     </div>
   </div>
 
-  <!-- Settings panel -->
-  <div class="panel" id="settings-panel" onclick="panelClose('settings-panel',event)">
-    <div class="panel-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-title">Ajustes</div>
-        <button class="sheet-close" onclick="panelClose('settings-panel')">✕</button>
+  <!-- SETTINGS PANEL -->
+  <div class="overlay" id="settings-panel" onclick="backdropClose('settings-panel',event)">
+    <div class="sheet">
+      <div class="shandle"></div>
+      <div class="shhead">
+        <div class="shtitle">Ajustes</div>
+        <button class="shclose" onclick="closePanel('settings-panel')">✕</button>
       </div>
 
-      <div class="setting-row">
-        <div class="sr-info"><div class="sr-label">Cambiar saque ahora</div><div class="sr-desc">Quién saca en este momento</div></div>
+      <div class="setrow">
+        <div class="srinfo"><div class="srlabel">Saque actual</div><div class="srdesc">Cambia quién saca ahora</div></div>
       </div>
-      <div class="serve-override">
-        <button class="so-pick" id="sopick1" onclick="forceServe(1)"></button>
-        <button class="so-pick" id="sopick2" onclick="forceServe(2)"></button>
+      <div class="srvbtns">
+        <button class="srvpick" id="sp1" onclick="forceServe(1)"></button>
+        <button class="srvpick" id="sp2" onclick="forceServe(2)"></button>
       </div>
+      <div class="shdiv"></div>
 
-      <div class="sheet-divider"></div>
+      <div class="setrow">
+        <div class="srinfo"><div class="srlabel">Cambio de lado</div><div class="srdesc">Avisar cuando toca cambiar</div></div>
+        <label class="toggle"><input type="checkbox" id="cfg-side" checked onchange="saveCfg()"><div class="ttrack"></div></label>
+      </div>
+      <div class="setrow">
+        <div class="srinfo"><div class="srlabel">Modo oficial</div><div class="srdesc" id="cfgSideDesc">Desactivado: cambio por set · Activado: juego impar</div></div>
+        <label class="toggle"><input type="checkbox" id="cfg-official" onchange="saveCfg()"><div class="ttrack"></div></label>
+      </div>
+      <div class="setrow">
+        <div class="srinfo"><div class="srlabel">Punto de oro</div><div class="srdesc">A 40-40 el siguiente punto gana el juego</div></div>
+        <label class="toggle"><input type="checkbox" id="cfg-gold" checked onchange="saveCfg()"><div class="ttrack"></div></label>
+      </div>
+      <div class="setrow">
+        <div class="srinfo"><div class="srlabel">Mejor de 5</div><div class="srdesc" id="cfgSetsDesc">Desactivado: mejor de 3 sets</div></div>
+        <label class="toggle"><input type="checkbox" id="cfg-bo5" onchange="saveCfg()"><div class="ttrack"></div></label>
+      </div>
+      <div class="setrow">
+        <div class="srinfo"><div class="srlabel">Voz</div><div class="srdesc">Cantar el marcador en castellano</div></div>
+        <label class="toggle"><input type="checkbox" id="cfg-voice" checked onchange="saveCfg()"><div class="ttrack"></div></label>
+      </div>
+      <div class="shdiv"></div>
 
-      <div class="setting-row">
-        <div class="sr-info"><div class="sr-label">Cambio de lado</div><div class="sr-desc">Mostrar aviso de cambio de lado</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-side" checked onchange="saveCfg()"><div class="toggle-track"></div></label>
+      <div class="shtitle" style="font-size:1rem">⌚ Mando reloj</div>
+      <div class="hookblock">
+        <div class="hooklbl">URL para el reloj</div>
+        <div class="hookurl" id="watchurl">—</div>
+        <button class="hookcopy" id="cbwatch" onclick="copyEl('watchurl','cbwatch')">Copiar URL</button>
       </div>
-      <div class="setting-row">
-        <div class="sr-info"><div class="sr-label">Modo oficial</div><div class="sr-desc" id="side-mode-desc">Activado: cambio en juego impar · Desactivado: cambio por set</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-official" onchange="saveCfg()"><div class="toggle-track"></div></label>
+      <div class="hookblock">
+        <div class="hooklbl">Código de canal</div>
+        <div class="hookurl" id="watchchan" style="font-size:1rem;font-weight:700;letter-spacing:2px">—</div>
+        <button class="hookcopy" id="cbchan" onclick="copyEl('watchchan','cbchan')">Copiar canal</button>
       </div>
-      <div class="setting-row">
-        <div class="sr-info"><div class="sr-label">Punto de oro</div><div class="sr-desc">A 40-40 el siguiente punto gana el juego</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-gold" checked onchange="saveCfg()"><div class="toggle-track"></div></label>
-      </div>
-      <div class="setting-row">
-        <div class="sr-info"><div class="sr-label">Mejor de 5</div><div class="sr-desc" id="sets-desc">Desactivado: mejor de 3 sets</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-bo5" onchange="updateSetsDesc();saveCfg()"><div class="toggle-track"></div></label>
-      </div>
-      <div class="setting-row">
-        <div class="sr-info"><div class="sr-label">Voz</div><div class="sr-desc">Cantar el marcador en castellano</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-voice" checked onchange="saveCfg()"><div class="toggle-track"></div></label>
-      </div>
-
-      <div class="sheet-divider"></div>
-      <div class="sheet-title" style="font-size:1rem">⌚ Mando — Reloj</div>
-      <div class="hook-block">
-        <div class="hook-lbl">URL para el reloj / 2º móvil</div>
-        <div class="hook-url" id="watch-url">—</div>
-        <button class="hook-copy" id="cb-watch" onclick="copyWatchUrl()">Copiar URL</button>
-      </div>
-      <div class="hook-block">
-        <div class="hook-lbl">Código de canal</div>
-        <div class="hook-url" id="watch-channel" style="font-size:1rem;font-weight:700;letter-spacing:2px">—</div>
-        <button class="hook-copy" id="cb-chan" onclick="copyChan()">Copiar canal</button>
-      </div>
-      <div class="hook-block">
-        <div class="hook-lbl">Instrucciones reloj</div>
-        <div class="hook-info">
-          1. Abre la URL del reloj en el navegador del Samsung Watch<br>
-          2. Introduce el <b>código de canal</b> cuando te lo pida<br>
-          3. ¡Listo! Toca P1 o P2 en el reloj para anotar
-        </div>
-      </div>
-      <div class="sheet-divider"></div>
-      <div class="sheet-title" style="font-size:1rem">📡 Botón WiFi físico</div>
-      <div class="hook-block">
-        <div class="hook-lbl c1">POST → Punto Pareja 1 (body: "1")</div>
-        <div class="hook-url" id="u1">—</div>
-        <button class="hook-copy" id="cb1" onclick="copyUrl(1)">Copiar URL</button>
-      </div>
-      <div class="hook-block">
-        <div class="hook-lbl c2">POST → Punto Pareja 2 (body: "2")</div>
-        <div class="hook-url" id="u2">—</div>
-        <button class="hook-copy" id="cb2" onclick="copyUrl(2)">Copiar URL</button>
-      </div>
-      <div class="hook-block">
-        <div class="hook-lbl">Instrucciones botón físico</div>
-        <div class="hook-info">
-          <b>Shelly Button1:</b> App Shelly → Acciones → HTTP Request → POST a la URL de arriba<br>
-          <b>Teclado:</b> 1 / 2 = punto &nbsp;|&nbsp; Z = deshacer
+      <div class="hookblock">
+        <div class="hooklbl">Instrucciones</div>
+        <div class="hookinfo">
+          1. Abre la URL en el navegador del reloj<br>
+          2. Introduce el <b>código de canal</b><br>
+          3. Pulsa P1 o P2 para anotar puntos
         </div>
       </div>
     </div>
   </div>
 
-
-  <!-- Resume dialog -->
-  <div class="panel" id="resume-dialog">
-    <div class="panel-sheet" style="gap:16px">
-      <div class="sheet-handle"></div>
-      <div style="text-align:center;font-size:2rem">🎾</div>
-      <div class="sheet-title" style="text-align:center;width:100%">Partida guardada</div>
-      <div id="resume-info" style="font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#64748b;text-align:center;line-height:1.6;"></div>
-      <button class="save-btn" onclick="resumeYes()" style="background:#16a34a">
-        Continuar partida →
-      </button>
-      <button class="save-btn" onclick="resumeNo()" style="background:#f1f5f9;color:#64748b">
-        Nueva partida
-      </button>
-    </div>
-  </div>
-
-</div>
+</div><!-- .app -->
 
 <script>
-// ══════════════════════════════════════
-// VOICE
-// ══════════════════════════════════════
-let maleVoice=null;
-function initVoice(){
-  if(!window.speechSynthesis)return;
-  const load=()=>{
-    const vs=speechSynthesis.getVoices();
-    maleVoice=vs.find(v=>v.lang.startsWith('es')&&/male|jorge|miguel|diego|carlos/i.test(v.name))
-      ||vs.find(v=>v.lang.startsWith('es-ES'))
-      ||vs.find(v=>v.lang.startsWith('es'))
-      ||null;
-  };
-  speechSynthesis.onvoiceschanged=load; load();
-}
-function speak(text){
-  if(!cfg.voice||!window.speechSynthesis)return;
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='es-ES'; u.rate=0.88; u.pitch=0.82; u.volume=1;
-  if(maleVoice)u.voice=maleVoice;
-  speechSynthesis.speak(u);
-}
-function buildAnn(pts,srv){
-  const t=srv-1, o=1-t;
-  const ps=pts[t], pr=pts[o];
-  if(ps===3&&pr===3) return cfg.goldPoint?'punto de oro':'iguales';
-  if(!cfg.goldPoint&&ps===4) return 'ventaja '+S.names[t];
-  if(!cfg.goldPoint&&pr===4) return 'ventaja '+S.names[o];
-  const L=['cero','quince','treinta','cuarenta'];
-  return L[ps]+' — '+L[pr];
-}
-
+'use strict';
 // ══════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════
-let cfg={sideChange:true,official:false,goldPoint:true,bo5:false,voice:true};
+let cfg = { side:true, official:false, gold:true, bo5:false, voice:true };
+
 function loadCfg(){
-  try{const c=JSON.parse(localStorage.getItem('ps_cfg3'));if(c)Object.assign(cfg,c);}catch{}
-  document.getElementById('cfg-side').checked   =cfg.sideChange;
-  document.getElementById('cfg-official').checked=cfg.official;
-  document.getElementById('cfg-gold').checked   =cfg.goldPoint;
-  document.getElementById('cfg-bo5').checked    =cfg.bo5;
-  document.getElementById('cfg-voice').checked  =cfg.voice;
-  updateSetsDesc();
+  try{ Object.assign(cfg, JSON.parse(localStorage.getItem('ps_cfg4')||'{}')); }catch{}
+  document.getElementById('cfg-side').checked    = cfg.side;
+  document.getElementById('cfg-official').checked= cfg.official;
+  document.getElementById('cfg-gold').checked    = cfg.gold;
+  document.getElementById('cfg-bo5').checked     = cfg.bo5;
+  document.getElementById('cfg-voice').checked   = cfg.voice;
 }
 function saveCfg(){
-  cfg.sideChange=document.getElementById('cfg-side').checked;
-  cfg.official  =document.getElementById('cfg-official').checked;
-  cfg.goldPoint =document.getElementById('cfg-gold').checked;
-  cfg.bo5       =document.getElementById('cfg-bo5').checked;
-  cfg.voice     =document.getElementById('cfg-voice').checked;
-  try{localStorage.setItem('ps_cfg3',JSON.stringify(cfg));}catch{}
-  updateSetsDesc();
+  cfg.side     = document.getElementById('cfg-side').checked;
+  cfg.official = document.getElementById('cfg-official').checked;
+  cfg.gold     = document.getElementById('cfg-gold').checked;
+  cfg.bo5      = document.getElementById('cfg-bo5').checked;
+  cfg.voice    = document.getElementById('cfg-voice').checked;
+  document.getElementById('cfgSetsDesc').textContent = cfg.bo5 ? 'Activado: mejor de 5 sets' : 'Desactivado: mejor de 3 sets';
+  try{ localStorage.setItem('ps_cfg4', JSON.stringify(cfg)); }catch{}
 }
-function updateSetsDesc(){
-  document.getElementById('sets-desc').textContent=
-    cfg.bo5?'Activado: mejor de 5 sets':'Desactivado: mejor de 3 sets';
+const SETS_WIN = () => cfg.bo5 ? 3 : 2;
+
+// ══════════════════════════════════════
+// VOICE
+// ══════════════════════════════════════
+let maleVoice = null;
+function initVoice(){
+  if(!window.speechSynthesis) return;
+  const load = () => {
+    const vs = speechSynthesis.getVoices();
+    maleVoice = vs.find(v=>v.lang.startsWith('es')&&/jorge|male|diego|carlos/i.test(v.name))
+             || vs.find(v=>v.lang.startsWith('es-ES'))
+             || vs.find(v=>v.lang.startsWith('es'))
+             || null;
+  };
+  speechSynthesis.onvoiceschanged = load; load();
 }
-const setsToWin=()=>cfg.bo5?3:2;
+function speak(text){
+  if(!cfg.voice || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='es-ES'; u.rate=0.88; u.pitch=0.82; u.volume=1;
+  if(maleVoice) u.voice = maleVoice;
+  speechSynthesis.speak(u);
+}
+const PLBL = ['cero','quince','treinta','cuarenta'];
+function buildAnn(pts, srv){
+  const t=srv-1, o=1-t, ps=pts[t], po=pts[o];
+  if(ps===3&&po===3) return cfg.gold ? 'punto de oro' : 'iguales';
+  if(!cfg.gold&&ps===4) return 'ventaja '+S.names[t];
+  if(!cfg.gold&&po===4) return 'ventaja '+S.names[o];
+  return (PLBL[ps]||'cero')+' — '+(PLBL[po]||'cero');
+}
 
 // ══════════════════════════════════════
 // STATE
 // ══════════════════════════════════════
-const LABELS=['0','15','30','40'];
-let S=fresh(), activeTeam=1, server=0;
+const PTLBL = ['0','15','30','40'];
+let S, activeTeam, server;
 let timerRef=null, timerStart=null, elapsed=0, setStartElapsed=0;
 
-function fresh(names){
-  return{pts:[0,0],games:[0,0],sets:[0,0],setHist:[],hist:[],over:false,
-    totalGames:0,names:names||['PAREJA 1','PAREJA 2']};
+function freshState(names){
+  return {
+    pts:   [0,0],
+    games: [0,0],
+    sets:  [0,0],
+    setHist: [],
+    hist:  [],
+    over:  false,
+    totalGames: 0,
+    names: names||['PAREJA 1','PAREJA 2']
+  };
 }
-
-// ══════════════════════════════════════
-// SERVE
-// ══════════════════════════════════════
-function showServeModal(){
-  document.getElementById('sm-nm1').textContent=S.names[0];
-  document.getElementById('sm-nm2').textContent=S.names[1];
-  document.getElementById('serve-modal').classList.add('show');
+function initState(){
+  S          = freshState();
+  activeTeam = 1;
+  server     = 0;
+  elapsed    = 0;
+  setStartElapsed = 0;
 }
-function selectServe(t){
-  server=t;
-  document.getElementById('serve-modal').classList.remove('show');
-  render();
-  setTimeout(()=>speak('Saca '+S.names[t-1]),300);
-}
-function forceServe(t){
-  server=t;
-  panelClose('settings-panel');
-  render();
-  speak('Saca '+S.names[t-1]);
-}
-function rotateServe(){ server=server===1?2:1; }
 
 // ══════════════════════════════════════
 // TIMER
 // ══════════════════════════════════════
 function startTimer(){
-  if(timerRef)return;
-  timerStart=Date.now()-elapsed*1000;
-  timerRef=setInterval(()=>{
-    elapsed=Math.floor((Date.now()-timerStart)/1000);
-    const el=document.getElementById('timer');
-    el.textContent=fmt(elapsed); el.classList.add('on');
-  },1000);
+  if(timerRef) return;
+  timerStart = Date.now() - elapsed*1000;
+  timerRef = setInterval(()=>{
+    elapsed = Math.floor((Date.now()-timerStart)/1000);
+    const el = document.getElementById('timer');
+    el.textContent = fmt(elapsed);
+    el.classList.add('on');
+  }, 1000);
 }
-function stopTimer(){clearInterval(timerRef);timerRef=null;}
-function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function stopTimer(){ clearInterval(timerRef); timerRef=null; }
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
 
 // ══════════════════════════════════════
-// POINT LOGIC — clean rewrite, no bugs
+// SERVE
+// ══════════════════════════════════════
+function showServeModal(){
+  document.getElementById('smnm1').textContent = S.names[0];
+  document.getElementById('smnm2').textContent = S.names[1];
+  document.getElementById('servemodal').classList.add('show');
+}
+function selectServe(t){
+  server = t;
+  document.getElementById('servemodal').classList.remove('show');
+  render();
+  setTimeout(()=>speak('Saca '+S.names[t-1]), 300);
+}
+function forceServe(t){
+  server = t;
+  closePanel('settings-panel');
+  render();
+  speak('Saca '+S.names[t-1]);
+}
+function rotateServe(){ server = server===1 ? 2 : 1; }
+
+// ══════════════════════════════════════
+// ★ POINT LOGIC — verified correct ★
 // ══════════════════════════════════════
 function addPoint(team){
   if(S.over) return;
   if(server===0){ showServeModal(); return; }
   startTimer();
 
-  // Snapshot for undo
+  // Save snapshot for undo
   const snap = JSON.parse(JSON.stringify(S));
-  snap._elapsed    = elapsed;
-  snap._setStart   = setStartElapsed;
-  snap._server     = server;
-  snap._active     = activeTeam;
-  snap.hist        = S.hist.slice(); // preserve undo stack in snapshot
+  snap._e  = elapsed;
+  snap._ss = setStartElapsed;
+  snap._sv = server;
+  snap._at = activeTeam;
   S.hist = [...S.hist, snap].slice(-80);
 
-  const t = team - 1;  // scorer index (0 or 1)
-  const o = 1 - t;     // other index
+  const t = team-1;   // scorer (0 or 1)
+  const o = 1-t;      // other
 
-  // ── Score the point ──
   const myPts    = S.pts[t];
   const theirPts = S.pts[o];
-
-  let wonGame  = false;
+  let gameWon = false;
   let toastMsg = '';
 
-  if(cfg.goldPoint){
-    // Golden point: at 40-40, next point wins
-    if(myPts===3 && theirPts===3){
-      triggerGold();
-      wonGame = true;
-    } else if(myPts===3){
-      wonGame = true;
-    } else {
-      S.pts[t]++;
-    }
+  // ── Determine if game is won or just increment points ──
+  if(cfg.gold){
+    if(myPts===3 && theirPts===3){ triggerGold(); gameWon=true; }
+    else if(myPts===3){ gameWon=true; }
+    else { S.pts[t]++; }
   } else {
-    // Classic with deuce/advantage (pts[x]=4 means advantage)
-    if(myPts===3 && theirPts===3){
-      S.pts[t] = 4; // advantage
-    } else if(myPts===4){
-      wonGame = true;
-    } else if(theirPts===4){
-      S.pts[o] = 3; // back to deuce
-    } else if(myPts===3){
-      wonGame = true;
-    } else {
-      S.pts[t]++;
-    }
+    if(myPts===3 && theirPts===3){ S.pts[t]=4; }       // advantage
+    else if(myPts===4)           { gameWon=true; }      // win from advantage
+    else if(theirPts===4)        { S.pts[o]=3; }        // back to deuce
+    else if(myPts===3)           { gameWon=true; }      // win at 40-x
+    else                         { S.pts[t]++; }
   }
 
-  // ── Won a game ──
-  if(wonGame){
-    S.pts = [0, 0];
+  // ── Process game win ──
+  if(gameWon){
+    S.pts   = [0,0];
     S.games[t]++;
     S.totalGames++;
     rotateServe();
 
-    const g  = S.games;          // current games [t1, t2]
-    const g0 = g[0], g1 = g[1];
-    const diff = Math.abs(g0 - g1);
-    const tiebreak = (g0===6 && g1===6);
-    const setOver  = tiebreak
-      ? ((g0>=7 || g1>=7) && diff>=1)
-      : ((g0>=6 || g1>=6) && diff>=2);
+    const g0 = S.games[0], g1 = S.games[1];
+    const diff = Math.abs(g0-g1);
+    const tb   = (g0===6 && g1===6);
+    const setOver = tb
+      ? ((g0>=7||g1>=7) && diff>=1)
+      : ((g0>=6||g1>=6) && diff>=2);
 
     if(setOver){
-      // Save set history BEFORE resetting games
-      S.setHist.push({ t1: g[0], t2: g[1], dur: elapsed - setStartElapsed });
+      // ★ Save set result BEFORE resetting games ★
+      const sg0=S.games[0], sg1=S.games[1];
+      S.setHist.push({ t1:sg0, t2:sg1, dur:elapsed-setStartElapsed });
       setStartElapsed = elapsed;
       S.sets[t]++;
-      S.games = [0, 0];
+      S.games = [0,0];   // reset games for new set
 
-      if(S.sets[t] >= setsToWin()){
-        // Match over
+      if(S.sets[t] >= SETS_WIN()){
         S.over = true;
         stopTimer();
+        saveMatch();
       } else {
-        // Set over, match continues
-        toastMsg = 'Set · ' + S.names[t];
-        // Side change between sets (amistoso) — NON-BLOCKING toast only
-        if(cfg.sideChange && !cfg.official){
-          showSideToast('↔ Cambio de lado');
-        }
-        setTimeout(()=>speak('Set para '+S.names[t]+'. Saca '+S.names[server-1]), 400);
+        toastMsg = 'Set · '+S.names[t];
+        if(cfg.side && !cfg.official) showSideToast();
+        setTimeout(()=>speak('Set para '+S.names[t]+'. Saca '+S.names[server-1]), 500);
       }
     } else {
-      // Game over, set continues
-      toastMsg = 'Juego · ' + S.names[t];
-      // Side change on odd games (oficial) — NON-BLOCKING toast only
-      if(cfg.sideChange && cfg.official && S.totalGames % 2 === 1){
-        showSideToast('↔ Cambio de lado — juego ' + S.totalGames);
-      }
+      toastMsg = 'Juego · '+S.names[t];
+      if(cfg.side && cfg.official && S.totalGames%2===1) showSideToast();
     }
   }
 
-  activeTeam=team;
-  render(); bumpAnim(team); greenFlash(team);
-  if(msg)showToast(msg,team);
-  if(!S.over){const ann=buildAnn(S.pts,server);setTimeout(()=>speak(ann),200);}
-  if(S.over)setTimeout(()=>showWin(team),700);
+  activeTeam = team;
+  render();
+  bumpAnim(team);
+  greenFlash(team);
+  if(toastMsg) showToast(toastMsg);
+  if(!S.over){ setTimeout(()=>speak(buildAnn(S.pts, server)), 200); }
+  if(S.over) setTimeout(()=>showWin(team), 600);
 }
 
 function undoPoint(){
-  if(!S.hist.length){showToast('Nada que deshacer',0);return;}
-  const prev=S.hist.pop();
-  const names=S.names;
-  elapsed=prev._elapsed??elapsed;
-  setStartElapsed=prev._setStart??setStartElapsed;
-  server=prev._server??server;
-  activeTeam=prev._active??activeTeam;
-  Object.assign(S,prev); S.names=names; S.hist=prev.hist||[];
-  render(); speechSynthesis.cancel();
-  saveMatch();
-  showToast('↩ Deshecho',0);
+  if(!S.hist.length){ showToast('Nada que deshacer'); return; }
+  const prev = S.hist.pop();
+  const names = S.names;
+  elapsed         = prev._e  ?? elapsed;
+  setStartElapsed = prev._ss ?? setStartElapsed;
+  server          = prev._sv ?? server;
+  activeTeam      = prev._at ?? activeTeam;
+  Object.assign(S, prev);
+  S.names = names;
+  S.hist  = prev.hist || [];
+  render();
+  speechSynthesis.cancel();
+  showToast('↩ Deshecho');
 }
 
 function resetMatch(){
   stopTimer(); elapsed=0; timerStart=null; setStartElapsed=0;
   server=0; activeTeam=1;
+  const names = S ? S.names : ['PAREJA 1','PAREJA 2'];
+  S = freshState(names);
+  clearSaved();
   document.getElementById('timer').textContent='00:00';
   document.getElementById('timer').classList.remove('on');
   document.getElementById('win').classList.remove('show');
-  document.getElementById('side-overlay').classList.remove('show');
-  S=fresh(S.names); render(); clearSavedMatch(); speechSynthesis.cancel();
-  setTimeout(showServeModal,400);
+  render();
+  speechSynthesis.cancel();
+  setTimeout(showServeModal, 300);
 }
 
 // ══════════════════════════════════════
 // RENDER
 // ══════════════════════════════════════
 function render(){
-  const p1=S.pts[0],p2=S.pts[1];
-  const goldActive=cfg.goldPoint&&p1===3&&p2===3;
-  const adv1=!cfg.goldPoint&&p1===4;
-  const adv2=!cfg.goldPoint&&p2===4;
+  const p0=S.pts[0], p1=S.pts[1];
+  const gold = cfg.gold && p0===3 && p1===3;
+  const adv0 = !cfg.gold && p0===4;
+  const adv1 = !cfg.gold && p1===4;
 
-  document.getElementById('pt1').textContent=goldActive?'🥇':adv1?'AD':adv2?'—':LABELS[p1]||'0';
-  document.getElementById('pt2').textContent=goldActive?'🥇':adv2?'AD':adv1?'—':LABELS[p2]||'0';
-  document.getElementById('gm1').textContent=S.games[0];
-  document.getElementById('gm2').textContent=S.games[1];
-  document.getElementById('nm1').textContent=S.names[0];
-  document.getElementById('nm2').textContent=S.names[1];
-  document.getElementById('ts1').textContent=S.sets[0];
-  document.getElementById('ts2').textContent=S.sets[1];
+  document.getElementById('pt1').textContent = gold?'🥇': adv0?'AD': adv1?'—': (PTLBL[p0]||'0');
+  document.getElementById('pt2').textContent = gold?'🥇': adv1?'AD': adv0?'—': (PTLBL[p1]||'0');
+  document.getElementById('gm1').textContent = S.games[0];
+  document.getElementById('gm2').textContent = S.games[1];
+  document.getElementById('nm1').textContent = S.names[0];
+  document.getElementById('nm2').textContent = S.names[1];
+  document.getElementById('ts1').textContent = S.sets[0];
+  document.getElementById('ts2').textContent = S.sets[1];
 
   // Zone classes
-  const z1cls='zone z1'+(activeTeam===1?' active':'')+(server===1?' serving':'');
-  const z2cls='zone z2'+(activeTeam===2?' active':'')+(server===2?' serving':'');
-  document.getElementById('z1').className=z1cls;
-  document.getElementById('z2').className=z2cls;
+  document.getElementById('z1').className = 'zone z1'+(activeTeam===1?' active':'')+(server===1?' srv':'');
+  document.getElementById('z2').className = 'zone z2'+(activeTeam===2?' active':'')+(server===2?' srv':'');
 
-  // Serve override buttons
-  const sp1=document.getElementById('sopick1'),sp2=document.getElementById('sopick2');
-  if(sp1){sp1.textContent=S.names[0];sp1.className='so-pick'+(server===1?' at1':'');}
-  if(sp2){sp2.textContent=S.names[1];sp2.className='so-pick'+(server===2?' at2':'');}
+  // Serve buttons in settings
+  const sp1=document.getElementById('sp1'), sp2=document.getElementById('sp2');
+  if(sp1){ sp1.textContent=S.names[0]; sp1.className='srvpick'+(server===1?' at1':''); }
+  if(sp2){ sp2.textContent=S.names[1]; sp2.className='srvpick'+(server===2?' at2':''); }
 
-  // Side badge
-  const badge=document.getElementById('side-badge');
-  if(cfg.sideChange&&cfg.official&&S.totalGames%2===1&&S.totalGames>0)
-    badge.classList.add('show');
-  else badge.classList.remove('show');
-
-  // Set history
   renderSetHist();
   updateUrls();
-  syncStateToStorage();
-}
-
-// ══════════════════════════════════════
-// NTFY.SH — Real-time reloj <-> móvil
-// ══════════════════════════════════════
-const NTFY = 'https://ntfy.sh';
-let ntfyChannel = '';
-let ntfyEvt     = null;
-
-function generateChannel(){
-  const r = Math.random().toString(36).substring(2,10);
-  return 'padel-' + r;
-}
-
-function loadNtfyChannel(){
-  let ch = localStorage.getItem('ps_ntfy_channel');
-  if(!ch){ ch = generateChannel(); localStorage.setItem('ps_ntfy_channel', ch); }
-  ntfyChannel = ch;
-  updateUrls();
-  subscribeNtfy();
-}
-
-function subscribeNtfy(){
-  if(ntfyEvt) ntfyEvt.close();
-  ntfyEvt = new EventSource(`${NTFY}/${ntfyChannel}/sse`);
-
-  ntfyEvt.addEventListener('message', e => {
-    try{
-      // ntfy.sh SSE format: JSON envelope with .message field containing our text
-      const envelope = JSON.parse(e.data);
-      const raw = envelope.message || envelope;
-      const team = parseInt(String(raw).trim());
-      if(team===1 || team===2){
-        addPoint(team);
-      }
-    }catch(err){ console.log('ntfy msg err:', err); }
-  });
-
-  ntfyEvt.onerror = () => {
-    // Auto-reconnect after 5s
-    setTimeout(subscribeNtfy, 5000);
-  };
-}
-
-async function publishState(){
-  if(!ntfyChannel) return;
-  const payload = JSON.stringify({
-    pts:   S.pts,
-    games: S.games,
-    sets:  S.sets,
-    names: S.names,
-    over:  S.over
-  });
-  // Fire and forget — don't await, don't block game
-  fetch(`${NTFY}/${ntfyChannel}-state`, {
-    method:'POST',
-    body: payload,
-    headers:{'Content-Type':'application/json','Title':'state'}
-  }).catch(()=>{});
-}
-
-function syncStateToStorage(){
   publishState();
   saveMatch();
 }
 
 function renderSetHist(){
-  const sh=S.setHist, curDur=elapsed-setStartElapsed;
-  let html='';
+  const sh = S.setHist;
+  const curDur = elapsed - setStartElapsed;
+  let html = '';
   for(let i=0;i<sh.length;i++){
-    const s=sh[i],w1=s.t1>s.t2,w2=s.t2>s.t1,mm=Math.floor(s.dur/60);
-    html+=`<div class="sh-row">
-      <div class="sh-s1 old ${w1?'won':''}">${s.t1}</div>
-      <div class="sh-dash">—</div>
-      <div class="sh-s2 old ${w2?'won':''}">${s.t2}</div>
-      <div class="sh-time">${mm?mm+"'":'—'}</div>
+    const s=sh[i], w0=s.t1>s.t2, w1=s.t2>s.t1, mm=Math.floor(s.dur/60);
+    html += `<div class="shrow">
+      <div class="shs1 ${w0?'won':''}">${s.t1}</div>
+      <div class="shdash">–</div>
+      <div class="shs2 ${w1?'won':''}">${s.t2}</div>
+      <div class="shtime">${mm?mm+"'":'–'}</div>
     </div>`;
   }
-  const ci=sh.length, cmm=Math.floor(curDur/60);
-  html+=`<div class="sh-row">
-    <div class="sh-s1 cur">${S.games[0]}</div>
-    <div class="sh-dash">—</div>
-    <div class="sh-s2 cur">${S.games[1]}</div>
-    <div class="sh-time cur">${cmm?cmm+"'":'—'}</div>
+  const cmm = Math.floor(curDur/60);
+  html += `<div class="shrow">
+    <div class="shs1 cur">${S.games[0]}</div>
+    <div class="shdash">–</div>
+    <div class="shs2 cur">${S.games[1]}</div>
+    <div class="shtime cur">${cmm?cmm+"'":'–'}</div>
   </div>`;
-  document.getElementById('set-hist').innerHTML=html;
+  document.getElementById('sethist').innerHTML = html;
 }
 
 // ══════════════════════════════════════
 // ANIMATIONS
 // ══════════════════════════════════════
-function greenFlash(team){
-  const el=document.getElementById('fl'+team);
-  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+function greenFlash(t){
+  const el=document.getElementById('fl'+t);
+  el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
 }
-function triggerGold(){
-  greenFlash(1); greenFlash(2);
-}
+function triggerGold(){ greenFlash(1); greenFlash(2); }
 function bumpAnim(t){
   const el=document.getElementById('pt'+t);
   el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
 }
-
 let toastTmr;
-function showToast(msg,team){
+function showToast(msg){
   clearTimeout(toastTmr);
   const el=document.getElementById('toast');
-  el.textContent=msg;
-  el.className='toast show'+(team===0?' gold':'');
-  toastTmr=setTimeout(()=>el.className='toast',1700);
+  el.textContent=msg; el.className='toast show';
+  toastTmr=setTimeout(()=>el.className='toast',1800);
 }
-let sideTimer;
-function showSide(msg, autoDismissMs=0){
-  // Keep overlay for manual use from settings if needed
-  document.getElementById('so-sub').textContent=msg;
-  document.getElementById('side-overlay').classList.add('show');
-  clearTimeout(sideTimer);
-  const delay = autoDismissMs>0 ? autoDismissMs : 5000;
-  sideTimer = setTimeout(dismissSide, delay);
-}
-
-// NON-BLOCKING side change — just a big toast, never blocks input
-let sideToastTimer;
-function showSideToast(msg){
-  clearTimeout(sideToastTimer);
-  const el = document.getElementById('side-toast');
-  if(!el) return;
-  el.textContent = msg;
+let sideTmr;
+function showSideToast(){
+  clearTimeout(sideTmr);
+  const el=document.getElementById('sidetoast');
+  el.textContent='↔ Cambio de lado';
   el.classList.add('show');
-  sideToastTimer = setTimeout(()=> el.classList.remove('show'), 4000);
+  sideTmr=setTimeout(()=>el.classList.remove('show'),4000);
 }
-function dismissSide(){document.getElementById('side-overlay').classList.remove('show');}
 function showWin(team){
-  document.getElementById('win-name').textContent=S.names[team-1];
-  document.getElementById('win-name').className='win-name c'+team;
-  document.getElementById('win-sets').textContent=S.setHist.map(s=>s.t1+'-'+s.t2).join('  ');
-  document.getElementById('win-time').textContent='⏱ '+fmt(elapsed);
+  document.getElementById('winname').textContent=S.names[team-1];
+  document.getElementById('winname').className='winname c'+team;
+  document.getElementById('winsets').textContent=S.setHist.map(s=>s.t1+'-'+s.t2).join('  ');
+  document.getElementById('wintime').textContent='⏱ '+fmt(elapsed);
   document.getElementById('win').classList.add('show');
   setTimeout(()=>speak('Partido ganado por '+S.names[team-1]),400);
 }
@@ -1159,6 +698,16 @@ function showWin(team){
 // ══════════════════════════════════════
 // PANELS
 // ══════════════════════════════════════
+function openPanel(id){
+  render(); // refresh serve buttons
+  document.getElementById(id+'-panel').classList.add('show');
+}
+function closePanel(id){
+  document.getElementById(id).classList.remove('show');
+}
+function backdropClose(id,e){
+  if(e.target===document.getElementById(id)) closePanel(id);
+}
 function openNames(){
   document.getElementById('ni1').value=S.names[0];
   document.getElementById('ni2').value=S.names[1];
@@ -1168,209 +717,164 @@ function openNames(){
 function saveNames(){
   S.names[0]=(document.getElementById('ni1').value.trim().toUpperCase())||'PAREJA 1';
   S.names[1]=(document.getElementById('ni2').value.trim().toUpperCase())||'PAREJA 2';
-  panelClose('names-panel'); render();
-}
-function openSettings(){updateUrls();render();document.getElementById('settings-panel').classList.add('show');}
-function panelClose(id,e){
-  // Called directly (no event) = always close
-  // Called from backdrop click = only close if clicking backdrop itself
-  if(!e || e.target===document.getElementById(id))
-    document.getElementById(id).classList.remove('show');
+  closePanel('names-panel');
+  render();
 }
 
-// webhooks + ntfy channel
+// Override openPanel for names to pre-fill inputs
+const _origOpenPanel = openPanel;
+
+// ══════════════════════════════════════
+// URLS / NTFY
+// ══════════════════════════════════════
+const NTFY = 'https://ntfy.sh';
+let ntfyCh = '', ntfyEvt = null;
+
+function initNtfy(){
+  let ch = localStorage.getItem('ps_ntfy_ch');
+  if(!ch){ ch='padel-'+Math.random().toString(36).substring(2,10); localStorage.setItem('ps_ntfy_ch',ch); }
+  ntfyCh = ch;
+  updateUrls();
+  subscribeNtfy();
+}
+
+function subscribeNtfy(){
+  if(ntfyEvt) ntfyEvt.close();
+  ntfyEvt = new EventSource(`${NTFY}/${ntfyCh}/sse`);
+  ntfyEvt.addEventListener('message', e => {
+    try{
+      const env = JSON.parse(e.data);
+      const team = parseInt(String(env.message||'').trim());
+      if(team===1||team===2) addPoint(team);
+    }catch{}
+  });
+  ntfyEvt.onerror = ()=>{ ntfyEvt.close(); setTimeout(subscribeNtfy,5000); };
+}
+
+function publishState(){
+  if(!ntfyCh) return;
+  fetch(`${NTFY}/${ntfyCh}-state`,{
+    method:'POST',
+    body:JSON.stringify({pts:S.pts,games:S.games,sets:S.sets,names:S.names,over:S.over}),
+    headers:{'Content-Type':'application/json','Title':'state'}
+  }).catch(()=>{});
+}
+
 function updateUrls(){
-  const base=location.origin+location.pathname.replace('index.html','');
-  const el1=document.getElementById('u1'),el2=document.getElementById('u2');
-  // Show ntfy URLs for physical buttons
-  if(el1)el1.textContent=`${NTFY}/${ntfyChannel}`;
-  if(el2)el2.textContent=`${NTFY}/${ntfyChannel}`;
-  // Update watch URL display
-  const wu=document.getElementById('watch-url');
-  if(wu)wu.textContent='https://ogferreres.github.io/marcador_padel/control.html';
-  // Update channel display
-  const wc=document.getElementById('watch-channel');
-  if(wc)wc.textContent=ntfyChannel;
+  const base = 'https://ogferreres.github.io/marcador_padel/';
+  const wu = document.getElementById('watchurl');
+  const wc = document.getElementById('watchchan');
+  if(wu) wu.textContent = base+'control.html';
+  if(wc) wc.textContent = ntfyCh || '—';
 }
-function copyUrl(t){
-  const txt=document.getElementById('u'+t)?.textContent||'';
+
+function copyEl(srcId, btnId){
+  const txt = document.getElementById(srcId)?.textContent||'';
   navigator.clipboard.writeText(txt).then(()=>{
-    const btn=document.getElementById('cb'+t);
-    if(btn){btn.textContent='✓ Copiado';btn.classList.add('ok');
-      setTimeout(()=>{btn.textContent='Copiar URL';btn.classList.remove('ok');},2000);}
-  });
-}
-function copyWatchUrl(){
-  const txt=document.getElementById('watch-url')?.textContent||'';
-  navigator.clipboard.writeText(txt).then(()=>{
-    const btn=document.getElementById('cb-watch');
-    if(btn){btn.textContent='✓ Copiado';btn.classList.add('ok');
-      setTimeout(()=>{btn.textContent='Copiar URL';btn.classList.remove('ok');},2000);}
-  });
-}
-function copyChan(){
-  const txt=document.getElementById('watch-channel')?.textContent||'';
-  navigator.clipboard.writeText(txt).then(()=>{
-    const btn=document.getElementById('cb-chan');
-    if(btn){btn.textContent='✓ Copiado';btn.classList.add('ok');
-      setTimeout(()=>{btn.textContent='Copiar canal';btn.classList.remove('ok');},2000);}
+    const btn=document.getElementById(btnId);
+    if(btn){ const orig=btn.textContent; btn.textContent='✓ Copiado'; btn.classList.add('ok');
+      setTimeout(()=>{btn.textContent=orig;btn.classList.remove('ok');},2000); }
   });
 }
 
 // ══════════════════════════════════════
-// ORIENTATION
+// PERSISTENCE
 // ══════════════════════════════════════
-async function unlockOrientation(){
-  try{
-    if(screen.orientation&&screen.orientation.unlock)await screen.orientation.unlock();
-    if(screen.unlockOrientation)screen.unlockOrientation();
-  }catch{}
-}
-function checkOrientation(){
-  document.getElementById('app').classList.toggle('land',window.innerWidth>window.innerHeight);
-}
-window.addEventListener('orientationchange',()=>setTimeout(checkOrientation,200));
-window.addEventListener('resize',checkOrientation);
-unlockOrientation(); checkOrientation();
-
-// ══════════════════════════════════════
-// WAKE LOCK & SW
-// ══════════════════════════════════════
-async function wakeLock(){try{if('wakeLock'in navigator)await navigator.wakeLock.request('screen');}catch{}}
-wakeLock();
-if('serviceWorker'in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='POINT')addPoint(e.data.team);});
-}
-
-// URL params
-const _p=new URLSearchParams(location.search).get('punto');
-if(_p==='1'||_p==='2'){history.replaceState({},'',location.pathname);setTimeout(()=>addPoint(parseInt(_p)),300);}
-
-// Keyboard
-document.addEventListener('keydown',e=>{
-  if(e.key==='1')addPoint(1);
-  if(e.key==='2')addPoint(2);
-  if(e.key==='z'||e.key==='Z')undoPoint();
-  if(e.key==='Escape')document.querySelectorAll('.panel.show').forEach(el=>el.classList.remove('show'));
-});
-
-
-// ══════════════════════════════════════
-// FORCE LANDSCAPE ORIENTATION
-// ══════════════════════════════════════
-async function lockLandscape(){
-  try{
-    if(screen.orientation && screen.orientation.lock){
-      await screen.orientation.lock('landscape');
-      console.log('Locked to landscape');
-      return;
-    }
-  }catch(e){ console.log('Lock failed, using CSS rotation:', e); }
-  // Fallback: CSS rotation handles it (already in stylesheet)
-}
-lockLandscape();
-
-
-// ══════════════════════════════════════
-// PERSISTENCE — save/restore match state
-// ══════════════════════════════════════
-const SAVE_KEY = 'ps_match_v1';
+const SAVE_KEY = 'ps_match_v2';
 
 function saveMatch(){
-  if(S.over) return; // don't save finished matches
+  if(S.over) return;
   try{
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      S:          S,
-      elapsed:    elapsed,
-      setStart:   setStartElapsed,
-      server:     server,
-      activeTeam: activeTeam,
-      savedAt:    Date.now()
+      S, elapsed, setStartElapsed, server, activeTeam, savedAt:Date.now()
     }));
-  }catch(e){}
+  }catch{}
 }
-
-function clearSavedMatch(){
-  try{ localStorage.removeItem(SAVE_KEY); }catch{}
-}
-
-function hasSavedMatch(){
+function clearSaved(){ try{ localStorage.removeItem(SAVE_KEY); }catch{} }
+function hasSaved(){
   try{
-    const raw = localStorage.getItem(SAVE_KEY);
-    if(!raw) return false;
-    const d = JSON.parse(raw);
-    // only restore if saved less than 24h ago and has some activity
-    const age = Date.now() - (d.savedAt||0);
-    return age < 86400000 && d.S && (d.S.sets[0]+d.S.sets[1]+d.S.games[0]+d.S.games[1]+d.S.pts[0]+d.S.pts[1]) > 0;
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(!d) return false;
+    const age=Date.now()-(d.savedAt||0);
+    const activity=(d.S.sets[0]+d.S.sets[1]+d.S.games[0]+d.S.games[1]+d.S.pts[0]+d.S.pts[1]);
+    return age<86400000 && activity>0;
   }catch{ return false; }
 }
-
-function restoreMatch(){
+function showResumeDialog(){
   try{
-    const d = JSON.parse(localStorage.getItem(SAVE_KEY));
-    S           = d.S;
-    elapsed     = d.elapsed    || 0;
-    setStartElapsed = d.setStart || 0;
-    server      = d.server     || 0;
-    activeTeam  = d.activeTeam || 1;
-    // Restart timer from where we left off
-    if(elapsed > 0){
-      timerStart = Date.now() - elapsed*1000;
-      timerRef = setInterval(()=>{
-        elapsed = Math.floor((Date.now()-timerStart)/1000);
-        const el = document.getElementById('timer');
-        el.textContent = fmt(elapsed);
-        el.classList.add('on');
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY));
+    const s=d.S, age=Math.round((Date.now()-(d.savedAt||0))/60000);
+    document.getElementById('rdinfo').innerHTML=
+      `<b>${s.names[0]}</b> vs <b>${s.names[1]}</b><br>`+
+      `Sets: ${s.sets[0]} – ${s.sets[1]}<br>`+
+      `Juegos: ${s.games[0]} – ${s.games[1]}<br>`+
+      `Hace ${age<1?'menos de 1 min':age+' min'}`;
+  }catch{}
+  document.getElementById('resumedialog').classList.add('show');
+}
+function resumeYes(){
+  document.getElementById('resumedialog').classList.remove('show');
+  try{
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY));
+    S=d.S; elapsed=d.elapsed||0; setStartElapsed=d.setStartElapsed||0;
+    server=d.server||0; activeTeam=d.activeTeam||1;
+    if(elapsed>0){
+      timerStart=Date.now()-elapsed*1000;
+      timerRef=setInterval(()=>{
+        elapsed=Math.floor((Date.now()-timerStart)/1000);
+        const el=document.getElementById('timer');
+        el.textContent=fmt(elapsed); el.classList.add('on');
       },1000);
     }
     render();
-    showToast('Partida restaurada ✓', 0);
-  }catch(e){
-    console.error('Restore failed:', e);
-    showToast('Error al restaurar', 0);
-  }
-}
-
-// Resume dialog
-function showResumeDialog(){
-  try{
-    const d = JSON.parse(localStorage.getItem(SAVE_KEY));
-    const s = d.S;
-    const age = Math.round((Date.now()-(d.savedAt||0))/60000);
-    const info = document.getElementById('resume-info');
-    if(info){
-      info.innerHTML =
-        `<b style="color:#0f172a">${s.names[0]}</b> vs <b style="color:#0f172a">${s.names[1]}</b><br>`+
-        `Sets: ${s.sets[0]} – ${s.sets[1]}<br>`+
-        `Juegos: ${s.games[0]} – ${s.games[1]}<br>`+
-        `Hace ${age<1?'menos de 1 min':age+' min'}`;
-    }
-  }catch{}
-  document.getElementById('resume-dialog').classList.add('show');
-}
-function resumeYes(){
-  document.getElementById('resume-dialog').classList.remove('show');
-  restoreMatch();
+    showToast('Partida restaurada ✓');
+  }catch{ resetMatch(); }
 }
 function resumeNo(){
-  document.getElementById('resume-dialog').classList.remove('show');
-  clearSavedMatch();
-  setTimeout(showServeModal, 300);
+  document.getElementById('resumedialog').classList.remove('show');
+  clearSaved();
+  setTimeout(showServeModal,300);
 }
+
+// ══════════════════════════════════════
+// WAKE LOCK + SW + ORIENTATION
+// ══════════════════════════════════════
+async function wakeLock(){ try{ if('wakeLock'in navigator) await navigator.wakeLock.request('screen'); }catch{} }
+wakeLock();
+
+async function lockLandscape(){
+  try{ if(screen.orientation?.lock) await screen.orientation.lock('landscape'); }catch{}
+}
+lockLandscape();
+
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// URL param (physical button fallback)
+const _p=new URLSearchParams(location.search).get('punto');
+if(_p==='1'||_p==='2'){ history.replaceState({},'',location.pathname); setTimeout(()=>addPoint(parseInt(_p)),300); }
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='1') addPoint(1);
+  if(e.key==='2') addPoint(2);
+  if(e.key==='z'||e.key==='Z') undoPoint();
+  if(e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(el=>el.classList.remove('show'));
+});
 
 // ══════════════════════════════════════
 // INIT
 // ══════════════════════════════════════
 loadCfg();
 initVoice();
+initState();
 render();
-loadNtfyChannel();
-// Check for saved match
-if(hasSavedMatch()){
+initNtfy();
+
+if(hasSaved()){
   setTimeout(showResumeDialog, 400);
 } else {
-  setTimeout(showServeModal, 600);
+  setTimeout(showServeModal, 500);
 }
 </script>
 </body>
