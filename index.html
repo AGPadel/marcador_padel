@@ -867,10 +867,14 @@ function subscribeNtfy() {
 function publishNtfy() {
   if (!ntfyCh) return;
   try {
+    // Send as plain text so ntfy puts our JSON in the .message field of the SSE envelope
     fetch(`${NTFY}/${ntfyCh}-state`, {
       method:'POST',
       body: JSON.stringify({ pts, games, sets, names, over:matchOver }),
-      headers:{'Content-Type':'application/json','Title':'state'}
+      headers:{
+        'Content-Type': 'text/plain',
+        'Title': 'state'
+      }
     }).catch(()=>{});
   } catch(e) {}
 }

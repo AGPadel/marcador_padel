@@ -2,328 +2,237 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#000000">
-<title>PadelScore · Mando</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@900&family=DM+Sans:wght@700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#000">
+<title>Mando Pádel</title>
 <style>
-*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
-html,body{ width:100%; height:100%; background:#000; overflow:hidden; touch-action:manipulation; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;background:#0f172a;color:#fff;font-family:system-ui,sans-serif;overflow:hidden;touch-action:manipulation;}
 
-.app{
-  width:100vw; height:100vh;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  background:radial-gradient(circle at center, #0f172a 0%, #000 100%);
-  gap:10px; padding:8px;
-  position:relative;
-}
+.app{width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;position:relative;}
 
-/* ── Top: channel + status ── */
-.top{
-  position:absolute; top:8px; left:0; right:0;
-  display:flex; flex-direction:column; align-items:center; gap:2px;
-}
-.channel-lbl{
-  font-family:'DM Sans',sans-serif; font-weight:700;
-  font-size:0.5rem; letter-spacing:3px; color:#1e293b;
-  text-transform:uppercase;
-}
-.status-row{ display:flex; align-items:center; gap:5px; }
-.sdot{ width:7px; height:7px; border-radius:50%; background:#1e293b; transition:all 0.3s; }
-.sdot.ok{ background:#22c55e; box-shadow:0 0 8px #22c55e; }
-.sdot.err{ background:#ef4444; }
-.stxt{ font-family:'DM Sans',sans-serif; font-weight:700; font-size:0.5rem; letter-spacing:2px; color:#334155; text-transform:uppercase; }
+/* Status */
+.status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:0.55rem;letter-spacing:2px;text-transform:uppercase;color:#334155;display:flex;align-items:center;justify-content:center;gap:5px;}
+.dot{width:6px;height:6px;border-radius:50%;background:#334155;flex-shrink:0;}
+.dot.green{background:#22c55e;box-shadow:0 0 6px #22c55e;}
+.dot.red{background:#ef4444;}
+.dot.yellow{background:#f59e0b;}
 
-/* ── Score display top ── */
-.score-bar{
-  font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size:0.85rem; letter-spacing:4px; color:#334155;
-  display:flex; gap:12px; align-items:center;
-  margin-top:28px;
-}
-.score-bar .s1{ color:#93c5fd; }
-.score-bar .s2{ color:#fca5a5; }
-.score-bar .pts{ color:#fff; font-size:1.1rem; }
+/* Score display */
+.score{font-size:0.75rem;letter-spacing:3px;color:#475569;text-align:center;}
+.score b{color:#94a3b8;}
 
-/* ── Buttons ── */
-.btns{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  width:100%;
-  max-width:300px;
-  flex:1;
-  max-height:160px;
-}
+/* Buttons */
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:280px;}
+.btn{border:none;border-radius:16px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;transition:transform 0.1s,filter 0.1s;-webkit-user-select:none;}
+.btn:active{transform:scale(0.91);filter:brightness(1.3);}
+.btn1{background:linear-gradient(145deg,#1d4ed8,#1e3a8a);border:2px solid rgba(147,197,253,0.2);}
+.btn2{background:linear-gradient(145deg,#dc2626,#7f1d1d);border:2px solid rgba(252,165,165,0.2);}
+.btn-pt{font-size:2.2rem;font-weight:900;line-height:1;color:#fff;}
+.btn-nm{font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.5);max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-gm{font-size:0.5rem;color:rgba(255,255,255,0.3);letter-spacing:1px;}
 
-.pt-btn{
-  border:none; border-radius:20px;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  cursor:pointer; position:relative; overflow:hidden;
-  transition:transform 0.1s, filter 0.1s;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
-  gap:3px; padding:8px;
-  width:100%; height:100%;
-}
-.pt-btn:active{ transform:scale(0.93); filter:brightness(1.25); }
+/* Feedback */
+.feedback{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#334155;min-height:1em;text-align:center;transition:color 0.2s;}
+.feedback.ok{color:#22c55e;}
+.feedback.err{color:#ef4444;}
 
-.pt-btn.b1{ background:linear-gradient(145deg,#1d4ed8,#1e3a8a); border:2px solid rgba(147,197,253,0.25); }
-.pt-btn.b2{ background:linear-gradient(145deg,#dc2626,#7f1d1d); border:2px solid rgba(252,165,165,0.25); }
+/* Send flash */
+.btn.flash{animation:btnflash 0.4s ease-out;}
+@keyframes btnflash{0%{filter:brightness(2)}100%{filter:brightness(1)}}
 
-.btn-pt{
-  font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size:clamp(2rem,12vw,3.2rem); line-height:0.9; color:#fff;
-}
-.btn-nm{
-  font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size:clamp(0.65rem,3.5vw,0.9rem); letter-spacing:2px;
-  color:rgba(255,255,255,0.6); text-transform:uppercase;
-  max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-}
-.btn-gm{
-  font-family:'DM Sans',sans-serif; font-weight:700;
-  font-size:0.55rem; letter-spacing:1px;
-  color:rgba(255,255,255,0.35);
-}
-
-/* flash ring on send */
-.pt-btn.flash-send::before{
-  content:''; position:absolute; inset:-2px;
-  border-radius:22px;
-  border:3px solid rgba(255,255,255,0.8);
-  animation:sendFlash 0.5s ease-out forwards;
-}
-@keyframes sendFlash{ 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(1.06)} }
-
-/* ── Bottom feedback ── */
-.feedback{
-  font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size:0.75rem; letter-spacing:3px;
-  color:#334155; text-transform:uppercase;
-  min-height:1.2em; text-align:center;
-  transition:color 0.2s;
-  margin-bottom:4px;
-}
-.feedback.ok{ color:#22c55e; }
-.feedback.err{ color:#ef4444; }
-
-/* ── Channel input (first time) ── */
-.setup{
-  position:fixed; inset:0;
-  background:radial-gradient(circle at center,#0f172a,#000);
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  gap:14px; padding:20px; z-index:100;
-}
-.setup-title{ font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1.4rem; letter-spacing:3px; color:#fff; text-align:center; }
-.setup-sub{ font-family:'DM Sans',sans-serif; font-size:0.7rem; color:#64748b; text-align:center; line-height:1.6; }
-.setup-input{
-  background:#0f172a; border:2px solid #334155; border-radius:10px;
-  color:#fff; font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size:1.1rem; letter-spacing:3px; padding:12px 14px;
-  outline:none; width:100%; text-align:center; text-transform:lowercase;
-}
-.setup-input:focus{ border-color:#2563eb; }
-.setup-btn{
-  background:#2563eb; border:none; color:#fff;
-  font-family:'Barlow Condensed',sans-serif; font-weight:900;
-  font-size:0.9rem; letter-spacing:3px; text-transform:uppercase;
-  padding:14px 28px; border-radius:10px; cursor:pointer; width:100%;
-}
+/* Setup screen */
+.setup{position:fixed;inset:0;background:#0f172a;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;}
+.setup-title{font-size:1.4rem;font-weight:900;letter-spacing:3px;text-transform:uppercase;text-align:center;}
+.setup-sub{font-size:0.72rem;color:#64748b;text-align:center;line-height:1.6;}
+.setup-input{background:#1e293b;border:2px solid #334155;border-radius:10px;color:#fff;font-size:1rem;letter-spacing:2px;padding:12px 14px;outline:none;width:100%;text-align:center;}
+.setup-input:focus{border-color:#2563eb;}
+.setup-btn{background:#2563eb;border:none;color:#fff;font-weight:900;font-size:0.9rem;letter-spacing:2px;text-transform:uppercase;padding:14px;border-radius:10px;cursor:pointer;width:100%;}
 </style>
 </head>
 <body>
-<div class="app" id="app">
-
-  <div class="top">
-    <div class="channel-lbl" id="ch-lbl">—</div>
-    <div class="status-row">
-      <div class="sdot" id="sdot"></div>
-      <span class="stxt" id="stxt">INIT</span>
-    </div>
+<div class="app">
+  <div class="status">
+    <div class="dot" id="dot"></div>
+    <span id="stxt">INICIANDO</span>
   </div>
 
-  <div class="score-bar">
-    <span class="s1" id="wts1">0</span>
-    <span style="color:#1e293b">SETS</span>
-    <span class="s2" id="wts2">0</span>
-    <span style="color:#1e293b">·</span>
-    <span class="pts" id="wpts">0 – 0</span>
-  </div>
+  <div class="score" id="score">0 – 0</div>
 
   <div class="btns">
-    <button class="pt-btn b1" id="btn1" onclick="sendPoint(1)">
-      <div class="btn-pt" id="wpt1">0</div>
-      <div class="btn-nm" id="wnm1">P1</div>
-      <div class="btn-gm" id="wgm1">0 juegos</div>
+    <button class="btn btn1" id="btn1" onclick="sendPoint(1)">
+      <div class="btn-pt" id="pt1">0</div>
+      <div class="btn-nm" id="nm1">P1</div>
+      <div class="btn-gm" id="gm1">0 juegos</div>
     </button>
-    <button class="pt-btn b2" id="btn2" onclick="sendPoint(2)">
-      <div class="btn-pt" id="wpt2">0</div>
-      <div class="btn-nm" id="wnm2">P2</div>
-      <div class="btn-gm" id="wgm2">0 juegos</div>
+    <button class="btn btn2" id="btn2" onclick="sendPoint(2)">
+      <div class="btn-pt" id="pt2">0</div>
+      <div class="btn-nm" id="nm2">P2</div>
+      <div class="btn-gm" id="gm2">0 juegos</div>
     </button>
   </div>
 
-  <div class="feedback" id="feedback">— listo —</div>
-
+  <div class="feedback" id="fb">— listo —</div>
 </div>
 
-<!-- Setup screen -->
+<!-- Setup -->
 <div class="setup" id="setup">
-  <div class="setup-title">🎾 MANDO</div>
-  <div class="setup-sub">
-    Introduce el <b style="color:#fff">código de canal</b><br>
-    que aparece en el marcador del móvil<br>
-    (Ajustes → Botón WiFi → Canal)
-  </div>
-  <input class="setup-input" id="ch-input" type="text"
-    placeholder="padel-xxxxxxxx" maxlength="30"
-    autocomplete="off" autocorrect="off" spellcheck="false">
-  <button class="setup-btn" onclick="connectChannel()">CONECTAR</button>
+  <div class="setup-title">🎾 Mando</div>
+  <div class="setup-sub">Introduce el código de canal<br>que aparece en Ajustes del marcador</div>
+  <input class="setup-input" id="ch-input" type="text" placeholder="padel-xxxxxxxx" autocomplete="off" autocorrect="off" spellcheck="false">
+  <button class="setup-btn" onclick="connect()">Conectar</button>
 </div>
 
 <script>
+'use strict';
+const NTFY = 'https://ntfy.sh';
 const LABELS = ['0','15','30','40'];
-const NTFY    = 'https://ntfy.sh';
+let ch = '';
+let evtSrc = null;
+let reconnTimer = null;
+let sending = false;
+let state = { pts:[0,0], games:[0,0], sets:[0,0], names:['P1','P2'] };
 
-let channel  = '';
-let sending  = false;
-let evtSrc   = null;
-let state    = { pts:[0,0], games:[0,0], sets:[0,0], names:['P1','P2'], over:false };
-
-// ── Persistir canal — también acepta ?ch= en la URL ──
-function loadChannel(){
-  // Check URL param first (from QR scan)
+// ── Init: read channel from URL ?ch= or localStorage ──
+function init() {
   const urlCh = new URLSearchParams(location.search).get('ch');
-  if(urlCh){
-    channel = urlCh.trim().toLowerCase();
-    localStorage.setItem('ps_channel', channel);
-    // Clean URL without reloading
+  if (urlCh) {
+    ch = urlCh.trim();
+    localStorage.setItem('ps_watch_ch', ch);
     history.replaceState({}, '', location.pathname);
     hideSetup();
-    connect();
+    startConnection();
     return;
   }
-  // Fall back to saved channel
-  const saved = localStorage.getItem('ps_channel');
-  if(saved){
-    channel = saved;
+  const saved = localStorage.getItem('ps_watch_ch');
+  if (saved) {
+    ch = saved;
     document.getElementById('ch-input').value = saved;
     hideSetup();
-    connect();
+    startConnection();
+    return;
   }
+  // Show setup
+  document.getElementById('setup').style.display = 'flex';
 }
 
-function connectChannel(){
+function connect() {
   const val = document.getElementById('ch-input').value.trim().toLowerCase();
-  if(!val){ return; }
-  channel = val;
-  localStorage.setItem('ps_channel', channel);
+  if (!val) return;
+  ch = val;
+  localStorage.setItem('ps_watch_ch', ch);
   hideSetup();
-  connect();
+  startConnection();
 }
 
-function hideSetup(){
-  document.getElementById('setup').style.display='none';
-  document.getElementById('ch-lbl').textContent = channel;
+function hideSetup() {
+  document.getElementById('setup').style.display = 'none';
 }
 
-// ── Conectar SSE para recibir estado del marcador ──
-let reconnectTimer;
-function connect(){
-  setStatus('','CONECTANDO');
-  if(evtSrc){ evtSrc.close(); evtSrc=null; }
-  clearTimeout(reconnectTimer);
+// ── SSE connection to receive state updates from phone ──
+function startConnection() {
+  setStatus('yellow', 'CONECTANDO...');
+  clearTimeout(reconnTimer);
+  if (evtSrc) { try { evtSrc.close(); } catch(e){} }
 
-  evtSrc = new EventSource(`${NTFY}/${channel}-state/sse`);
+  const url = `${NTFY}/${ch}-state/sse`;
+  evtSrc = new EventSource(url);
+
+  evtSrc.onopen = () => {
+    setStatus('green', 'CONECTADO');
+  };
 
   evtSrc.addEventListener('message', e => {
-    try{
-      // ntfy.sh wraps in JSON: {id, event, topic, message, ...}
-      const envelope = JSON.parse(e.data);
-      // the actual payload is in envelope.message (as a JSON string)
-      const d = typeof envelope.message === 'string'
-        ? JSON.parse(envelope.message)
-        : envelope;
-      if(d && d.pts){
-        Object.assign(state, d);
-        renderWatch();
+    try {
+      const env = JSON.parse(e.data);
+      // ntfy wraps payload in env.message
+      const payload = typeof env.message === 'string' ? JSON.parse(env.message) : env;
+      if (payload && payload.pts) {
+        state = payload;
+        renderState();
+        setStatus('green', 'CONECTADO');
       }
-      setStatus('ok','CONECTADO');
-    }catch(err){ console.log('SSE parse err:', err, e.data); }
+    } catch(err) {}
   });
 
   evtSrc.onerror = () => {
-    setStatus('err','RECONECTANDO...');
-    evtSrc.close(); evtSrc=null;
-    // Reconnect after 3s
-    reconnectTimer = setTimeout(connect, 3000);
+    setStatus('red', 'SIN SEÑAL');
+    try { evtSrc.close(); } catch(e) {}
+    evtSrc = null;
+    // Reconnect after 4 seconds
+    reconnTimer = setTimeout(startConnection, 4000);
   };
-  evtSrc.onopen = () => setStatus('ok','CONECTADO');
 }
 
-// ── Enviar punto al marcador ──
-async function sendPoint(team){
-  if(sending) return;
+// ── Send point to phone via ntfy ──
+async function sendPoint(team) {
+  if (sending) return;
   sending = true;
 
-  const btn = document.getElementById('btn'+team);
-  btn.classList.add('flash-send');
-  setTimeout(()=>btn.classList.remove('flash-send'), 500);
+  // Flash button immediately
+  const btn = document.getElementById('btn' + team);
+  btn.classList.remove('flash');
+  void btn.offsetWidth;
+  btn.classList.add('flash');
 
-  try{
-    const resp = await fetch(`${NTFY}/${channel}`, {
-      method:'POST',
-      body: String(team),
-      headers:{
-        'Content-Type': 'text/plain',
-        'Title': 'punto'
-      }
+  setFeedback('Enviando...', '');
+
+  try {
+    const resp = await fetch(`${NTFY}/${ch}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain', 'Title': 'punto' },
+      body: String(team)
     });
-    if(resp.ok){
-      setFeedback('✓ PUNTO P'+team, 'ok');
+    if (resp.ok) {
+      setFeedback('✓ Punto P' + team, 'ok');
     } else {
-      setFeedback('✗ ERROR '+resp.status, 'err');
+      setFeedback('✗ Error ' + resp.status, 'err');
     }
-  }catch(e){
-    setFeedback('✗ SIN RED', 'err');
+  } catch(e) {
+    setFeedback('✗ Sin red', 'err');
   }
 
   sending = false;
 }
 
-// ── Render ──
-function renderWatch(){
-  const p1=state.pts[0], p2=state.pts[1];
-  const gold = p1===3 && p2===3;
-  document.getElementById('wpt1').textContent = gold?'🥇':(LABELS[p1]||'0');
-  document.getElementById('wpt2').textContent = gold?'🥇':(LABELS[p2]||'0');
-  document.getElementById('wgm1').textContent = state.games[0]+' juegos';
-  document.getElementById('wgm2').textContent = state.games[1]+' juegos';
-  document.getElementById('wnm1').textContent = (state.names[0]||'P1').substring(0,7);
-  document.getElementById('wnm2').textContent = (state.names[1]||'P2').substring(0,7);
-  document.getElementById('wts1').textContent = state.sets[0];
-  document.getElementById('wts2').textContent = state.sets[1];
-  document.getElementById('wpts').textContent = (LABELS[p1]||'0')+' – '+(LABELS[p2]||'0');
+// ── Render state from phone ──
+function renderState() {
+  const p = state.pts || [0,0];
+  const g = state.games || [0,0];
+  const s = state.sets || [0,0];
+  const n = state.names || ['P1','P2'];
+  const gold = p[0]===3 && p[1]===3;
+
+  document.getElementById('pt1').textContent = gold ? '🥇' : (LABELS[p[0]] || '0');
+  document.getElementById('pt2').textContent = gold ? '🥇' : (LABELS[p[1]] || '0');
+  document.getElementById('nm1').textContent = (n[0]||'P1').substring(0,8);
+  document.getElementById('nm2').textContent = (n[1]||'P2').substring(0,8);
+  document.getElementById('gm1').textContent = g[0] + ' juegos';
+  document.getElementById('gm2').textContent = g[1] + ' juegos';
+  document.getElementById('score').innerHTML =
+    `<b style="color:#93c5fd">${s[0]}</b> sets – <b style="color:#fca5a5">${s[1]}</b>  ·  ${g[0]}-${g[1]} juegos`;
 }
 
 // ── UI helpers ──
-function setStatus(type, txt){
-  document.getElementById('sdot').className='sdot '+(type==='ok'?'ok':type==='err'?'err':'');
-  document.getElementById('stxt').textContent=txt;
-}
-let fbTimer;
-function setFeedback(msg, cls){
-  const el=document.getElementById('feedback');
-  el.textContent=msg; el.className='feedback '+cls;
-  clearTimeout(fbTimer);
-  fbTimer=setTimeout(()=>{el.textContent='— listo —';el.className='feedback';},2000);
+function setStatus(color, txt) {
+  const dot = document.getElementById('dot');
+  dot.className = 'dot' + (color==='green'?' green':color==='red'?' red':color==='yellow'?' yellow':'');
+  document.getElementById('stxt').textContent = txt;
 }
 
-loadChannel();
-renderWatch();
+let fbTimer;
+function setFeedback(msg, cls) {
+  const el = document.getElementById('fb');
+  el.textContent = msg;
+  el.className = 'feedback' + (cls ? ' '+cls : '');
+  clearTimeout(fbTimer);
+  fbTimer = setTimeout(() => {
+    el.textContent = '— listo —';
+    el.className = 'feedback';
+  }, 2000);
+}
+
+init();
 </script>
 </body>
 </html>
