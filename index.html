@@ -560,6 +560,7 @@ function addPoint(team) {
 
   activeTeam = team;
   render();
+  saveMatch();
   doFlash(team);
   doBump(team);
   setTimeout(() => speak(buildAnn()), 200);
@@ -583,6 +584,7 @@ function resetMatch() {
   document.getElementById('timer').classList.remove('on');
   document.getElementById('win').classList.remove('show');
   try { speechSynthesis.cancel(); } catch(e) {}
+  clearMatch();
   render();
   setTimeout(showServeModal, 300);
 }
@@ -713,6 +715,113 @@ function saveNames() {
 }
 
 // ══════════════════════════════════════
+// PERSISTENCE — minimal, safe
+// ══════════════════════════════════════
+const MATCH_KEY = 'ps_match_v3';
+
+function saveMatch() {
+  if (matchOver) return;
+  try {
+    // Save ONLY the flat variables needed to resume — no undoStack ever
+    const data = {
+      pts, games, sets,
+      setHist:    setHist.map(s => ({t1:s.t1, t2:s.t2})),
+      totalGames, server, activeTeam,
+      elapsed, setStartElapsed,
+      names, savedAt: Date.now()
+    };
+    localStorage.setItem(MATCH_KEY, JSON.stringify(data));
+  } catch(e) {
+    // If storage full, clear everything except config and retry
+    try {
+      const cfg_bak = localStorage.getItem(CFG_KEY);
+      const ntfy_bak = localStorage.getItem('ps_ntfy');
+      localStorage.clear();
+      if (cfg_bak) localStorage.setItem(CFG_KEY, cfg_bak);
+      if (ntfy_bak) localStorage.setItem('ps_ntfy', ntfy_bak);
+      localStorage.setItem(MATCH_KEY, JSON.stringify({ pts, games, sets,
+        setHist: setHist.map(s=>({t1:s.t1,t2:s.t2})),
+        totalGames, server, activeTeam, elapsed, setStartElapsed,
+        names, savedAt: Date.now() }));
+    } catch(e2) {}
+  }
+}
+
+function clearMatch() {
+  try { localStorage.removeItem(MATCH_KEY); } catch(e) {}
+}
+
+function getSavedMatch() {
+  try {
+    const raw = localStorage.getItem(MATCH_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    const age = Date.now() - (d.savedAt || 0);
+    // Only restore if less than 12 hours old and has some activity
+    const activity = (d.sets[0]+d.sets[1]+d.games[0]+d.games[1]+d.pts[0]+d.pts[1]);
+    if (age < 43200000 && activity > 0) return d;
+    return null;
+  } catch(e) { return null; }
+}
+
+function showResumeDialog(d) {
+  // Build a simple modal dynamically
+  const age = Math.round((Date.now()-(d.savedAt||0))/60000);
+  const ageStr = age < 1 ? 'ahora mismo' : `hace ${age} min`;
+  const el = document.createElement('div');
+  el.id = 'resume-modal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.88);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px;';
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:22px;padding:24px 18px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;align-items:center;">
+      <div style="font-size:2.5rem">🎾</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:2px;color:#0f172a;text-transform:uppercase;text-align:center;">Partida guardada</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:0.82rem;color:#64748b;text-align:center;line-height:1.7;">
+        <b style="color:#0f172a">${d.names[0]}</b> vs <b style="color:#0f172a">${d.names[1]}</b><br>
+        Sets: ${d.sets[0]} – ${d.sets[1]}<br>
+        Juegos: ${d.games[0]} – ${d.games[1]}<br>
+        Guardado ${ageStr}
+      </div>
+      <button onclick="resumeMatch()" style="background:#16a34a;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;text-transform:uppercase;padding:14px;border-radius:12px;cursor:pointer;width:100%;">Continuar →</button>
+      <button onclick="discardMatch()" style="background:#f1f5f9;border:none;color:#64748b;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;text-transform:uppercase;padding:14px;border-radius:12px;cursor:pointer;width:100%;">Nueva partida</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+
+function resumeMatch() {
+  const d = getSavedMatch();
+  document.getElementById('resume-modal')?.remove();
+  if (!d) { setTimeout(showServeModal, 300); return; }
+  // Restore all flat variables
+  pts        = d.pts.slice();
+  games      = d.games.slice();
+  sets       = d.sets.slice();
+  setHist    = d.setHist.map(s=>({t1:s.t1,t2:s.t2}));
+  totalGames = d.totalGames || 0;
+  server     = d.server || 0;
+  activeTeam = d.activeTeam || 1;
+  elapsed    = d.elapsed || 0;
+  setStartElapsed = d.setStartElapsed || 0;
+  names      = d.names || ['PAREJA 1','PAREJA 2'];
+  // Restart timer from saved elapsed
+  if (elapsed > 0) {
+    timerStart = Date.now() - elapsed*1000;
+    timerRef = setInterval(() => {
+      elapsed = Math.floor((Date.now()-timerStart)/1000);
+      document.getElementById('timer').textContent = fmt(elapsed);
+      document.getElementById('timer').classList.add('on');
+    }, 1000);
+  }
+  render();
+  showToast('Partida restaurada ✓');
+}
+
+function discardMatch() {
+  document.getElementById('resume-modal')?.remove();
+  clearMatch();
+  setTimeout(showServeModal, 300);
+}
+
+// ══════════════════════════════════════
 // NTFY — reloj communication
 // ══════════════════════════════════════
 const NTFY = 'https://ntfy.sh';
@@ -793,7 +902,13 @@ render();
 initNtfy();
 wakeLock();
 lockLandscape();
-setTimeout(showServeModal, 400);
+// Check for saved match on startup
+const _saved = getSavedMatch();
+if (_saved) {
+  setTimeout(() => showResumeDialog(_saved), 400);
+} else {
+  setTimeout(showServeModal, 400);
+}
 </script>
 </body>
 </html>
