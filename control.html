@@ -193,8 +193,20 @@ let sending  = false;
 let evtSrc   = null;
 let state    = { pts:[0,0], games:[0,0], sets:[0,0], names:['P1','P2'], over:false };
 
-// ── Persistir canal ──
+// ── Persistir canal — también acepta ?ch= en la URL ──
 function loadChannel(){
+  // Check URL param first (from QR scan)
+  const urlCh = new URLSearchParams(location.search).get('ch');
+  if(urlCh){
+    channel = urlCh.trim().toLowerCase();
+    localStorage.setItem('ps_channel', channel);
+    // Clean URL without reloading
+    history.replaceState({}, '', location.pathname);
+    hideSetup();
+    connect();
+    return;
+  }
+  // Fall back to saved channel
   const saved = localStorage.getItem('ps_channel');
   if(saved){
     channel = saved;

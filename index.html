@@ -312,21 +312,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;}
 
       <div class="shtitle" style="font-size:1rem">⌚ Mando reloj</div>
       <div class="hookblock">
-        <div class="hooklbl">URL del mando</div>
-        <div class="hookurl">https://ogferreres.github.io/marcador_padel/control.html</div>
+        <div class="hooklbl">Paso 1 — Activa el hotspot del móvil</div>
+        <div class="hookinfo">Ajustes → Zona WiFi → Activar<br>Luego conecta el reloj a ese WiFi</div>
       </div>
       <div class="hookblock">
-        <div class="hooklbl">Canal de comunicación</div>
+        <div class="hooklbl">Paso 2 — Envía el enlace al reloj</div>
+        <div class="hookinfo" style="margin-bottom:8px">Mándate el enlace del mando por WhatsApp.<br>Ábrelo desde el reloj con un toque.</div>
+        <button class="hookcopy" id="btn-share" onclick="shareWatchLink()" style="width:100%;padding:10px;font-size:0.75rem;border-radius:10px;background:#25D366;">
+          📲 Compartir por WhatsApp
+        </button>
+      </div>
+      <div class="hookblock">
+        <div class="hooklbl">Canal activo</div>
         <div class="hookurl" id="hook-chan">—</div>
-        <button class="hookcopy" id="cb-chan" onclick="copyChan()">Copiar canal</button>
-      </div>
-      <div class="hookblock">
-        <div class="hooklbl">Instrucciones</div>
-        <div class="hookinfo">
-          1. Abre la URL en el reloj<br>
-          2. Introduce el <b>código de canal</b><br>
-          3. Pulsa P1 o P2 para anotar
-        </div>
       </div>
     </div>
   </div>
@@ -694,6 +692,7 @@ function showPanel(id) {
   if (sp1) { sp1.textContent=names[0]; sp1.className='srvpick'+(server===1?' at1':''); }
   if (sp2) { sp2.textContent=names[1]; sp2.className='srvpick'+(server===2?' at2':''); }
   document.getElementById(id+'-panel').classList.add('show');
+  // Regenerate QR when settings opens
 }
 function showNamesPanel() {
   document.getElementById('ni1').value = names[0];
@@ -832,10 +831,14 @@ function initNtfy() {
     let ch = localStorage.getItem('ps_ntfy');
     if (!ch) { ch='padel-'+Math.random().toString(36).substring(2,10); localStorage.setItem('ps_ntfy',ch); }
     ntfyCh = ch;
-    document.getElementById('hook-chan').textContent = ch;
+    // Show channel code
+    const hookChan = document.getElementById('hook-chan');
+    if (hookChan) hookChan.textContent = ch;
     subscribeNtfy();
+    // Generate QR after a short delay (panel may not be visible yet)
   } catch(e) {}
 }
+
 
 let ntfyEvt = null;
 function subscribeNtfy() {
@@ -872,6 +875,18 @@ function copyChan() {
       setTimeout(()=>{ btn.textContent='Copiar canal'; btn.classList.remove('ok'); }, 2000);
     });
   } catch(e) {}
+}
+
+function shareWatchLink() {
+  const url = 'https://ogferreres.github.io/marcador_padel/control.html?ch=' + ntfyCh;
+  const msg = '🎾 Mando PadelScore — ábrelo en el reloj: ' + url;
+  // Try Web Share API first (native share sheet)
+  if (navigator.share) {
+    navigator.share({ title:'Mando PadelScore', url: url }).catch(()=>{});
+    return;
+  }
+  // Fallback: open WhatsApp directly
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 // ══════════════════════════════════════
