@@ -841,7 +841,7 @@ function initNtfy() {
     const hookChan = document.getElementById('hook-chan');
     if (hookChan) hookChan.textContent = ch;
     const hookUrl = document.getElementById('hook-watchurl');
-    if (hookUrl) hookUrl.textContent = 'https://ogferreres.github.io/marcador_padel/control.html?ch=' + ch;
+    if (hookUrl) hookUrl.textContent = 'https://agpadel.github.io/marcador_padel/control.html?ch=' + ch;
     subscribeNtfy();
     // Generate QR after a short delay (panel may not be visible yet)
   } catch(e) {}
@@ -886,7 +886,7 @@ function copyChan() {
 }
 
 function getWatchUrl() {
-  return 'https://ogferreres.github.io/marcador_padel/control.html?ch=' + ntfyCh;
+  return 'https://agpadel.github.io/marcador_padel/control.html?ch=' + ntfyCh;
 }
 
 function copyWatchUrl() {
