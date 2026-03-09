@@ -506,13 +506,14 @@ function addPoint(team){
   if(server===0){ showServeModal(); return; }
   startTimer();
 
-  // Save snapshot for undo
+  // Save snapshot for undo — strip nested hist to prevent exponential growth
   const snap = JSON.parse(JSON.stringify(S));
+  snap.hist = [];  // ← KEY FIX: never nest hist inside hist
   snap._e  = elapsed;
   snap._ss = setStartElapsed;
   snap._sv = server;
   snap._at = activeTeam;
-  S.hist = [...S.hist, snap].slice(-80);
+  S.hist = [...S.hist, snap].slice(-30);  // max 30 undos
 
   const t = team-1;   // scorer (0 or 1)
   const o = 1-t;      // other
@@ -623,6 +624,7 @@ function resetMatch(){
 // RENDER
 // ══════════════════════════════════════
 function render(){
+  try{
   const p0=S.pts[0], p1=S.pts[1];
   const gold = cfg.gold && p0===3 && p1===3;
   const adv0 = !cfg.gold && p0===4;
@@ -651,7 +653,7 @@ function render(){
   publishState();
   saveMatch();
   updateDbg();
-}
+  }catch(e){ console.error('render error:',e); }}
 
 function renderSetHist(){
   const sh = S.setHist;
@@ -774,12 +776,14 @@ function subscribeNtfy(){
 }
 
 function publishState(){
-  if(!ntfyCh) return;
-  fetch(`${NTFY}/${ntfyCh}-state`,{
-    method:'POST',
-    body:JSON.stringify({pts:S.pts,games:S.games,sets:S.sets,names:S.names,over:S.over}),
-    headers:{'Content-Type':'application/json','Title':'state'}
-  }).catch(()=>{});
+  try{
+    if(!ntfyCh) return;
+    fetch(`${NTFY}/${ntfyCh}-state`,{
+      method:'POST',
+      body:JSON.stringify({pts:S.pts,games:S.games,sets:S.sets,names:S.names,over:S.over}),
+      headers:{'Content-Type':'application/json','Title':'state'}
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 function updateUrls(){
@@ -807,10 +811,21 @@ const SAVE_KEY = 'ps_match_v2';
 function saveMatch(){
   if(S.over) return;
   try{
+    // Strip hist array before saving — it can grow very large
+    const toSave = Object.assign({}, S, { hist: [] });
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      S, elapsed, setStartElapsed, server, activeTeam, savedAt:Date.now()
+      S: toSave, elapsed, setStartElapsed, server, activeTeam, savedAt:Date.now()
     }));
-  }catch{}
+  }catch(e){
+    // If localStorage fails, clear it and try again without history
+    try{
+      localStorage.clear();
+      const toSave = Object.assign({}, S, { hist: [] });
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        S: toSave, elapsed, setStartElapsed, server, activeTeam, savedAt:Date.now()
+      }));
+    }catch(e2){ console.log('save failed:', e2); }
+  }
 }
 function clearSaved(){ try{ localStorage.removeItem(SAVE_KEY); }catch{} }
 function hasSaved(){
