@@ -181,6 +181,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;touch-action
 .winsets{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;color:#fff;letter-spacing:5px;}
 .wintime{font-family:monospace;font-size:0.78rem;color:#475569;letter-spacing:3px;}
 .winbtn{margin-top:8px;background:#fff;border:none;color:#0f172a;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;text-transform:uppercase;padding:15px 34px;border-radius:12px;cursor:pointer;}
+
+/* ── DEBUG overlay ── */
+#dbg{position:fixed;bottom:60px;left:4px;right:4px;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:0.55rem;padding:6px;border-radius:6px;z-index:900;display:none;line-height:1.6;pointer-events:none;}
+
 </style>
 </head>
 <body>
@@ -365,6 +369,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;touch-action
     <div style="font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#64748b">Esta app funciona en horizontal</div>
   </div>
   <style>@keyframes spin{0%{transform:rotate(0deg)}25%{transform:rotate(90deg)}75%{transform:rotate(90deg)}100%{transform:rotate(360deg)}}</style>
+
+
+  <div id="dbg"></div>
 
 </div><!-- .app -->
 
@@ -556,12 +563,11 @@ function addPoint(team){
         saveMatch();
       } else {
         toastMsg = 'Set · '+S.names[t];
-        if(cfg.side && !cfg.official) showSideToast();
+        // side change after set — decoupled
         setTimeout(()=>speak('Set para '+S.names[t]+'. Saca '+S.names[server-1]), 500);
       }
     } else {
       toastMsg = 'Juego · '+S.names[t];
-      if(cfg.side && cfg.official && S.totalGames%2===1) showSideToast();
     }
   }
 
@@ -572,6 +578,15 @@ function addPoint(team){
   if(toastMsg) showToast(toastMsg);
   if(!S.over){ setTimeout(()=>speak(buildAnn(S.pts, server)), 200); }
   if(S.over) setTimeout(()=>showWin(team), 600);
+  // Side change COMPLETELY decoupled — runs after everything else, safely
+  if(!S.over) setTimeout(()=>checkSideChange(), 100);
+}
+
+function checkSideChange(){
+  try{
+    if(!cfg.side) return;
+    if(cfg.official && S.totalGames%2===1 && S.totalGames>0) showSideToast();
+  }catch(e){ console.log('side err:', e); }
 }
 
 function undoPoint(){
@@ -635,6 +650,7 @@ function render(){
   updateUrls();
   publishState();
   saveMatch();
+  updateDbg();
 }
 
 function renderSetHist(){
@@ -681,11 +697,16 @@ function showToast(msg){
 }
 let sideTmr;
 function showSideToast(){
-  clearTimeout(sideTmr);
-  const el=document.getElementById('sidetoast');
-  el.textContent='↔ Cambio de lado';
-  el.classList.add('show');
-  sideTmr=setTimeout(()=>el.classList.remove('show'),4000);
+  try{
+    clearTimeout(sideTmr);
+    const el=document.getElementById('sidetoast');
+    if(!el){ console.log('sidetoast element missing'); return; }
+    el.textContent='↔ Cambio de lado';
+    el.classList.add('show');
+    sideTmr=setTimeout(()=>{ 
+      try{ el.classList.remove('show'); }catch{} 
+    }, 4000);
+  }catch(e){ console.log('showSideToast error:', e); }
 }
 function showWin(team){
   document.getElementById('winname').textContent=S.names[team-1];
@@ -895,6 +916,36 @@ if(hasSaved()){
 } else {
   setTimeout(showServeModal, 500);
 }
+
+// ── DEBUG: tap timer 5x to toggle ──
+let dbgTaps=0, dbgTmr;
+document.getElementById('timer').addEventListener('click',()=>{
+  dbgTaps++;
+  clearTimeout(dbgTmr);
+  dbgTmr=setTimeout(()=>dbgTaps=0,1500);
+  if(dbgTaps>=5){
+    dbgTaps=0;
+    const d=document.getElementById('dbg');
+    if(d.style.display==='none'){
+      d.style.display='block';
+      updateDbg();
+    } else { d.style.display='none'; }
+  }
+});
+function updateDbg(){
+  const d=document.getElementById('dbg');
+  if(!d||d.style.display==='none') return;
+  d.textContent=
+    'pts:'+JSON.stringify(S.pts)+
+    ' games:'+JSON.stringify(S.games)+
+    ' sets:'+JSON.stringify(S.sets)+
+    ' over:'+S.over+
+    '\ntotalG:'+S.totalGames+' server:'+server+' active:'+activeTeam+
+    '\ncfg:gold='+cfg.gold+' side='+cfg.side+' official='+cfg.official+
+    '\nsetHist:'+JSON.stringify(S.setHist.map(s=>s.t1+'-'+s.t2))+
+    '\nhist.len:'+S.hist.length;
+}
+
 </script>
 </body>
 </html>
