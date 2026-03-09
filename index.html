@@ -312,15 +312,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f8fafc;}
 
       <div class="shtitle" style="font-size:1rem">⌚ Mando reloj</div>
       <div class="hookblock">
-        <div class="hooklbl">Paso 1 — Activa el hotspot del móvil</div>
-        <div class="hookinfo">Ajustes → Zona WiFi → Activar<br>Luego conecta el reloj a ese WiFi</div>
+        <div class="hooklbl">Paso 1 — Hotspot</div>
+        <div class="hookinfo">Móvil: Ajustes → Zona WiFi → Activar<br>Reloj: Ajustes → Conexiones → WiFi → conectar al hotspot</div>
       </div>
       <div class="hookblock">
-        <div class="hooklbl">Paso 2 — Envía el enlace al reloj</div>
-        <div class="hookinfo" style="margin-bottom:8px">Mándate el enlace del mando por WhatsApp.<br>Ábrelo desde el reloj con un toque.</div>
-        <button class="hookcopy" id="btn-share" onclick="shareWatchLink()" style="width:100%;padding:10px;font-size:0.75rem;border-radius:10px;background:#25D366;">
-          📲 Compartir por WhatsApp
-        </button>
+        <div class="hooklbl">Paso 2 — Enlace del mando</div>
+        <div class="hookurl" id="hook-watchurl" style="font-size:0.6rem;word-break:break-all;">—</div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button class="hookcopy" id="btn-copy-url" onclick="copyWatchUrl()" style="flex:1;padding:8px;font-size:0.65rem;border-radius:8px;">
+            📋 Copiar enlace
+          </button>
+          <button class="hookcopy" id="btn-wa" onclick="openWhatsApp()" style="flex:1;padding:8px;font-size:0.65rem;border-radius:8px;background:#25D366;">
+            💬 WhatsApp
+          </button>
+        </div>
+        <div class="hookinfo" style="margin-top:6px;">Mándate el enlace por WhatsApp y ábrelo desde el reloj</div>
       </div>
       <div class="hookblock">
         <div class="hooklbl">Canal activo</div>
@@ -834,6 +840,8 @@ function initNtfy() {
     // Show channel code
     const hookChan = document.getElementById('hook-chan');
     if (hookChan) hookChan.textContent = ch;
+    const hookUrl = document.getElementById('hook-watchurl');
+    if (hookUrl) hookUrl.textContent = 'https://ogferreres.github.io/marcador_padel/control.html?ch=' + ch;
     subscribeNtfy();
     // Generate QR after a short delay (panel may not be visible yet)
   } catch(e) {}
@@ -877,15 +885,33 @@ function copyChan() {
   } catch(e) {}
 }
 
-function shareWatchLink() {
-  const url = 'https://ogferreres.github.io/marcador_padel/control.html?ch=' + ntfyCh;
-  const msg = '🎾 Mando PadelScore — ábrelo en el reloj: ' + url;
-  // Try Web Share API first (native share sheet)
-  if (navigator.share) {
-    navigator.share({ title:'Mando PadelScore', url: url }).catch(()=>{});
-    return;
+function getWatchUrl() {
+  return 'https://ogferreres.github.io/marcador_padel/control.html?ch=' + ntfyCh;
+}
+
+function copyWatchUrl() {
+  const url = getWatchUrl();
+  try {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('btn-copy-url');
+      btn.textContent = '✓ Copiado'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = '📋 Copiar enlace'; btn.classList.remove('ok'); }, 2000);
+    });
+  } catch(e) {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    const btn = document.getElementById('btn-copy-url');
+    btn.textContent = '✓ Copiado'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = '📋 Copiar enlace'; btn.classList.remove('ok'); }, 2000);
   }
-  // Fallback: open WhatsApp directly
+}
+
+function openWhatsApp() {
+  const url = getWatchUrl();
+  const msg = '🎾 Mando PadelScore — ábrelo en el reloj: ' + url;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
