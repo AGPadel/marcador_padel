@@ -32,6 +32,10 @@ html,body{width:100%;height:100%;background:#0f172a;color:#fff;font-family:syste
 .btn-nm{font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.5);max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .btn-gm{font-size:0.5rem;color:rgba(255,255,255,0.3);letter-spacing:1px;}
 
+/* Undo button */
+.undo-btn{background:#1e293b;border:2px solid #334155;border-radius:12px;color:#94a3b8;font-size:0.75rem;font-weight:700;letter-spacing:3px;padding:10px 0;width:100%;max-width:280px;cursor:pointer;text-align:center;transition:background 0.15s,color 0.15s;}
+.undo-btn:active{background:#7f1d1d;border-color:#dc2626;color:#fca5a5;}
+
 /* Feedback */
 .feedback{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#334155;min-height:1em;text-align:center;transition:color 0.2s;}
 .feedback.ok{color:#22c55e;}
@@ -71,6 +75,10 @@ html,body{width:100%;height:100%;background:#0f172a;color:#fff;font-family:syste
       <div class="btn-gm" id="gm2">0 juegos</div>
     </button>
   </div>
+
+  <button class="undo-btn" id="btnUndo" onclick="sendUndo()">
+    ↩ DESHACER
+  </button>
 
   <div class="feedback" id="fb">— listo —</div>
 </div>
@@ -162,6 +170,28 @@ function startConnection() {
     // Reconnect after 4 seconds
     reconnTimer = setTimeout(startConnection, 4000);
   };
+}
+
+// ── Send undo to phone via ntfy ──
+async function sendUndo() {
+  const btn = document.getElementById('btnUndo');
+  btn.style.opacity = '0.5';
+  setFeedback('Deshaciendo...', '');
+  try {
+    const resp = await fetch(`${NTFY}/${ch}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain', 'Title': 'punto' },
+      body: 'undo'
+    });
+    if (resp.ok) {
+      setFeedback('↩ Deshecho', 'ok');
+    } else {
+      setFeedback('✗ Error', 'err');
+    }
+  } catch(e) {
+    setFeedback('✗ Sin red', 'err');
+  }
+  btn.style.opacity = '1';
 }
 
 // ── Send point to phone via ntfy ──

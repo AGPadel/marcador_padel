@@ -834,17 +834,63 @@ let ntfyCh = '';
 
 function initNtfy() {
   try {
-    let ch = localStorage.getItem('ps_ntfy');
-    if (!ch) { ch='padel-'+Math.random().toString(36).substring(2,10); localStorage.setItem('ps_ntfy',ch); }
-    ntfyCh = ch;
-    // Show channel code
-    const hookChan = document.getElementById('hook-chan');
-    if (hookChan) hookChan.textContent = ch;
-    const hookUrl = document.getElementById('hook-watchurl');
-    if (hookUrl) hookUrl.textContent = 'https://agpadel.github.io/marcador_padel/control.html?ch=' + ch;
-    subscribeNtfy();
-    // Generate QR after a short delay (panel may not be visible yet)
+    const ch = localStorage.getItem('ps_ntfy');
+    if (!ch) {
+      setTimeout(showChannelSetup, 800);
+      return;
+    }
+    applyChannel(ch);
   } catch(e) {}
+}
+
+function showChannelSetup() {
+  if (localStorage.getItem('ps_ntfy')) return;
+  const el = document.createElement('div');
+  el.id = 'ch-setup';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.92);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px;';
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:22px;padding:24px 18px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;">
+      <div style="font-size:1.8rem;text-align:center">⌚</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:2px;color:#0f172a;text-transform:uppercase;text-align:center;">Elige tu canal</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:0.78rem;color:#64748b;text-align:center;line-height:1.6;">
+        Elige un nombre corto y fácil.<br>Será siempre el mismo — el reloj<br>lo recordará para siempre.
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:4px 4px 4px 14px;">
+        <span style="font-family:monospace;font-size:0.8rem;color:#94a3b8;flex-shrink:0">padel-</span>
+        <input id="ch-name-input" type="text" maxlength="12"
+          style="border:none;background:transparent;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.2rem;letter-spacing:2px;color:#0f172a;outline:none;width:100%;text-transform:lowercase;"
+          placeholder="tunombre" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <button onclick="confirmChannel()" style="background:#0f172a;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;letter-spacing:3px;text-transform:uppercase;padding:14px;border-radius:12px;cursor:pointer;width:100%;">Usar este canal →</button>
+      <button onclick="useRandomChannel()" style="background:#f1f5f9;border:none;color:#94a3b8;font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.75rem;padding:10px;border-radius:10px;cursor:pointer;width:100%;">Generar aleatorio</button>
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => document.getElementById('ch-name-input')?.focus(), 300);
+}
+
+function confirmChannel() {
+  const val = (document.getElementById('ch-name-input')?.value||'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  if (!val) return;
+  const ch = 'padel-' + val;
+  document.getElementById('ch-setup')?.remove();
+  localStorage.setItem('ps_ntfy', ch);
+  applyChannel(ch);
+}
+
+function useRandomChannel() {
+  const ch = 'padel-' + Math.random().toString(36).substring(2,10);
+  document.getElementById('ch-setup')?.remove();
+  localStorage.setItem('ps_ntfy', ch);
+  applyChannel(ch);
+}
+
+function applyChannel(ch) {
+  ntfyCh = ch;
+  const hookChan = document.getElementById('hook-chan');
+  if (hookChan) hookChan.textContent = ch;
+  const hookUrl = document.getElementById('hook-watchurl');
+  if (hookUrl) hookUrl.textContent = 'https://agpadel.github.io/marcador_padel/control.html?ch=' + ch;
+  subscribeNtfy();
 }
 
 
@@ -856,8 +902,10 @@ function subscribeNtfy() {
     ntfyEvt.addEventListener('message', e => {
       try {
         const env = JSON.parse(e.data);
-        const team = parseInt(String(env.message||'').trim());
-        if (team===1||team===2) addPoint(team);
+        const msg = String(env.message||'').trim();
+        if (msg==='1') addPoint(1);
+        else if (msg==='2') addPoint(2);
+        else if (msg==='undo') undoPoint();
       } catch(err) {}
     });
     ntfyEvt.onerror = () => { try{ntfyEvt.close();}catch{} setTimeout(subscribeNtfy,5000); };
